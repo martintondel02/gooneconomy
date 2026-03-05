@@ -54,15 +54,17 @@ const TradingView: React.FC = () => {
               <span className="text-[8px] opacity-50">▼</span>
             </button>
             <div className="absolute right-0 top-full mt-1 w-24 glass-panel bg-[#1e2329] border-white/10 rounded shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
-              {timeframes.map(tf => (
-                <div
-                  key={tf}
-                  onClick={() => setActiveTimeframe(tf)}
-                  className={`px-4 py-2 text-[10px] font-bold cursor-pointer hover:bg-white/5 transition-colors ${activeTimeframe === tf ? 'text-cyan-400 bg-white/5' : 'text-white/50'}`}
-                >
-                  {tf.toUpperCase()}
-                </div>
-              ))}
+              <div className="py-1">
+                {timeframes.map(tf => (
+                  <div
+                    key={tf}
+                    onClick={() => setActiveTimeframe(tf)}
+                    className={`px-4 py-2 text-[10px] font-bold cursor-pointer hover:bg-white/5 transition-colors ${activeTimeframe === tf ? 'text-bull bg-white/5' : 'text-white/50'}`}
+                  >
+                    {tf.toUpperCase()}
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </div>
