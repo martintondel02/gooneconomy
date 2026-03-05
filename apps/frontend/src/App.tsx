@@ -8,12 +8,15 @@ function App() {
     prices, 
     assets, 
     positions, 
+    leaderboard,
+    user,
     activeAsset, 
     connect, 
     disconnect, 
     setActiveAsset, 
     openPosition, 
-    closePosition 
+    closePosition,
+    claimStimulus
   } = useMarketStore();
 
   useEffect(() => {
@@ -22,6 +25,10 @@ function App() {
   }, [connect, disconnect]);
 
   const tickers = ['GOON', 'BTC', 'ETH', 'NVDA', 'PUMPKIN', 'MOSSAD', 'AAPL', 'TSLA', 'GOLD'];
+
+  // Calculate stats
+  const unrealizedPnL = positions.reduce((acc, p) => acc + (p.pnl || 0), 0);
+  const netWorth = (user?.cashBalance || 0) + unrealizedPnL;
 
   return (
     <div className="flex flex-col h-screen">
@@ -69,20 +76,28 @@ function App() {
             <div className="flex gap-8">
               <div>
                 <p className="text-xs text-white/50 uppercase tracking-widest">Global Hierarchy</p>
-                <p className="text-2xl font-bold text-cyan-400">$10,420.69 <span className="text-xs font-normal text-white/30 ml-2">#1,242 Rank</span></p>
+                <p className="text-2xl font-bold text-cyan-400">
+                  ${netWorth.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} 
+                  <span className="text-xs font-normal text-white/30 ml-2">#{leaderboard.find(l => l.username === user?.username)?.rank || '---'} Rank</span>
+                </p>
               </div>
               <div className="h-8 w-px bg-white/10"></div>
               <div>
                 <p className="text-xs text-white/50 uppercase tracking-widest">Liquid Assets</p>
-                <p className="text-2xl font-bold">$1,242.00</p>
+                <p className="text-2xl font-bold">${user?.cashBalance.toLocaleString() || '0.00'}</p>
               </div>
             </div>
             <div className="flex gap-4">
               <div className="flex flex-col items-end mr-4">
                 <p className="text-[10px] text-white/30 uppercase">Status Tier</p>
-                <p className="text-sm font-bold text-yellow-400">GOLDEN GOON</p>
+                <p className="text-sm font-bold text-yellow-400 uppercase">{user?.statusScore > 400 ? 'Golden Goon' : 'Silver Goon'}</p>
               </div>
-              <button className="px-6 py-2 glass-panel border-cyan-500/30 hover:bg-cyan-500/10 transition-all text-xs font-bold tracking-widest uppercase">Claim Stimulus</button>
+              <button 
+                onClick={() => claimStimulus()}
+                className="px-6 py-2 glass-panel border-cyan-500/30 hover:bg-cyan-500/10 transition-all text-xs font-bold tracking-widest uppercase"
+              >
+                Claim Stimulus
+              </button>
             </div>
           </section>
 
@@ -119,10 +134,13 @@ function App() {
             </div>
           </section>
 
-          {/* Active Positions & Betting */}
+          {/* Active Positions & Leaderboard */}
           <div className="col-span-4 row-span-5 flex flex-col gap-4">
             <section className="flex-1 glass-panel p-4 overflow-hidden flex flex-col">
-              <h2 className="text-xs font-black uppercase text-white/30 mb-4 tracking-[0.2em]">Active Positions</h2>
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xs font-black uppercase text-white/30 tracking-[0.2em]">Active Positions</h2>
+                <span className="text-[10px] text-cyan-400 font-bold font-mono">${unrealizedPnL.toFixed(2)} PnL</span>
+              </div>
               <div className="flex-1 overflow-y-auto space-y-3 pr-2 custom-scrollbar">
                 {positions.length === 0 ? (
                   <div className="h-full flex items-center justify-center">
@@ -157,6 +175,21 @@ function App() {
               </div>
             </section>
             
+            <section className="flex-1 glass-panel p-4 overflow-hidden flex flex-col">
+              <h2 className="text-xs font-black uppercase text-white/30 mb-4 tracking-[0.2em]">Global Leaderboard</h2>
+              <div className="flex-1 overflow-y-auto space-y-2 pr-2 custom-scrollbar">
+                {leaderboard.map((entry, i) => (
+                  <div key={i} className={`flex justify-between items-center p-2 rounded ${entry.username === user?.username ? 'bg-cyan-500/10 border border-cyan-500/20' : 'bg-white/5 border border-white/5'}`}>
+                    <div className="flex items-center gap-3">
+                      <span className="text-[10px] font-mono text-white/30">#{entry.rank}</span>
+                      <span className="text-xs font-bold">{entry.username}</span>
+                    </div>
+                    <span className="text-xs font-mono text-cyan-400">${entry.netWorth.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
+                  </div>
+                ))}
+              </div>
+            </section>
+
             <section className="h-56 glass-panel p-4 flex flex-col">
               <h2 className="text-xs font-black uppercase text-white/30 mb-4 tracking-[0.2em]">Execute Trade</h2>
               <div className="flex gap-2 mb-4">

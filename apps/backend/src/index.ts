@@ -7,6 +7,7 @@ import { MatchingEngine } from './engine/MatchingEngine.js';
 import { ShadowMarketMaker } from './engine/ShadowMarketMaker.js';
 import { CandleStore } from './store/CandleStore.js';
 import { PositionManager, PositionSide } from './manager/PositionManager.js';
+import { LeaderboardManager } from './manager/LeaderboardManager.js';
 
 dotenv.config();
 
@@ -25,6 +26,7 @@ const port = process.env.PORT || 28081;
 const engine = new MatchingEngine();
 const candleStore = new CandleStore();
 const posManager = new PositionManager(engine);
+const leaderboard = new LeaderboardManager(posManager);
 
 const initialAssets = [
   { id: '1', ticker: 'GOON', name: 'GoonCoin', type: 'CRYPTO', price: 142.32 },
@@ -83,6 +85,26 @@ app.post('/trade/close', (req, res) => {
   const { positionId } = req.body;
   const result = posManager.closePosition(positionId);
   if (!result) return res.status(404).json({ error: 'Position not found' });
+  
+  // Update user balance
+  leaderboard.updateBalance(result.position.userId, result.pnl);
+  
+  res.json(result);
+});
+
+app.get('/leaderboard', (req, res) => {
+  res.json(leaderboard.getLeaderboard());
+});
+
+app.get('/user/:userId', (req, res) => {
+  const user = leaderboard.getUser(req.params.userId);
+  if (!user) return res.status(404).json({ error: 'User not found' });
+  res.json(user);
+});
+
+app.post('/user/claim-stimulus', (req, res) => {
+  const { userId } = req.body;
+  const result = leaderboard.claimStimulus(userId);
   res.json(result);
 });
 
@@ -97,6 +119,10 @@ setInterval(() => {
   
   // Check liquidations
   const liquidations = posManager.checkLiquidations();
+  liquidations.forEach(l => {
+    leaderboard.updateBalance(l.position.userId, l.pnl);
+  });
+
   if (liquidations.length > 0) {
     io.emit('market:liquidations', liquidations);
   }
@@ -108,8 +134,13 @@ setInterval(() => {
     currentPrice: engine.getCurrentPrice(p.assetId)
   }));
 
+  const lbData = leaderboard.getLeaderboard();
+  const currentUser = leaderboard.getUser('dev-user');
+
   io.emit('market:prices', currentPrices);
   io.emit('user:positions', activePositions);
+  io.emit('market:leaderboard', lbData);
+  io.emit('user:data', currentUser);
 }, 1000);
 
 io.on('connection', (socket) => {

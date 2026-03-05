@@ -14,16 +14,17 @@ enum AssetType {
 }
 
 model User {
-  id           String   @id @default(uuid())
-  username     String   @unique
-  cashBalance  Float    @default(100.0)
-  statusScore  Int      @default(0)
-  inventory    Json     @default("{}") // ticker -> quantity
-  trades       Trade[]
-  positions    Position[]
-  statusItems  UserStatusItem[]
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id                String   @id @default(uuid())
+  username          String   @unique
+  cashBalance       Float    @default(100.0)
+  statusScore       Int      @default(0)
+  lastStimulusClaim DateTime @default(dbgenerated("'1970-01-01 00:00:00'"))
+  inventory         Json     @default("{}") // ticker -> quantity
+  trades            Trade[]
+  positions         Position[]
+  statusItems       UserStatusItem[]
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
 }
 
 model Asset {

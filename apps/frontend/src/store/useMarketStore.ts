@@ -5,6 +5,8 @@ interface MarketState {
   prices: Record<string, number>;
   assets: any[];
   positions: any[];
+  leaderboard: any[];
+  user: any | null;
   activeAsset: any | null;
   socket: Socket | null;
   connect: () => void;
@@ -12,12 +14,15 @@ interface MarketState {
   setActiveAsset: (asset: any) => void;
   openPosition: (side: 'LONG' | 'SHORT', margin: number, leverage: number) => Promise<void>;
   closePosition: (positionId: string) => Promise<void>;
+  claimStimulus: () => Promise<void>;
 }
 
 export const useMarketStore = create<MarketState>((set, get) => ({
   prices: {},
   assets: [],
   positions: [],
+  leaderboard: [],
+  user: null,
   activeAsset: null,
   socket: null,
 
@@ -33,6 +38,14 @@ export const useMarketStore = create<MarketState>((set, get) => ({
 
     socket.on('user:positions', (positions: any[]) => {
       set({ positions });
+    });
+
+    socket.on('market:leaderboard', (leaderboard: any[]) => {
+      set({ leaderboard });
+    });
+
+    socket.on('user:data', (user: any) => {
+      set({ user });
     });
 
     // Fetch initial assets
@@ -80,5 +93,19 @@ export const useMarketStore = create<MarketState>((set, get) => ({
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ positionId })
     });
+  },
+
+  claimStimulus: async () => {
+    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:28081';
+    const res = await fetch(`${apiUrl}/user/claim-stimulus`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId: 'dev-user' })
+    });
+    const result = await res.json();
+    if (!result.success && result.nextClaimIn) {
+      const hours = Math.floor(result.nextClaimIn / (60 * 60 * 1000));
+      alert(`Stimulus available in ${hours} hours.`);
+    }
   }
 }));
