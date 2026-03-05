@@ -24,8 +24,8 @@ const TradingView: React.FC = () => {
         setIsTfOpen(false);
       }
     };
-    document.addEventListener('click', handleClickOutside);
-    return () => document.removeEventListener('click', handleClickOutside);
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
   const timeframes = ['1s', '5s', '15s', '1m', '5m', '15m', '1h', '3h', '12h', '24h'];
@@ -37,14 +37,14 @@ const TradingView: React.FC = () => {
   };
 
   return (
-    <div className="flex-1 flex overflow-hidden">
+    <div className="flex-1 flex overflow-hidden relative">
       {/* Left: Market Selection */}
       <AssetPanel />
 
       {/* Center: Chart & Management */}
-      <main className="flex-1 flex flex-col min-w-0 bg-[#0a0a0f]/50">
+      <main className="flex-1 flex flex-col min-w-0 bg-[#0a0a0f]/50 relative">
         {/* Asset Header Info */}
-        <div className="h-14 terminal-border-b flex items-center px-4 gap-6 bg-black/40 relative z-30">
+        <div className="h-14 terminal-border-b flex items-center px-4 gap-6 bg-[#14151a] relative z-40">
           <div className="flex items-center gap-3">
             <h2 className="text-base font-black tracking-tight">{activeAsset?.ticker}USDT</h2>
             <span className={`text-sm font-mono font-bold ${prices[activeAsset?.ticker] > activeAsset?.price ? 'text-bull' : 'text-bear'}`}>
@@ -62,20 +62,24 @@ const TradingView: React.FC = () => {
           </div>
 
           {/* Timeframe Dropdown */}
-          <div className="ml-auto relative" ref={tfRef}>
+          <div className="ml-auto relative" ref={tfRef} style={{ zIndex: 100 }}>
             <button 
               onClick={(e) => {
+                e.preventDefault();
                 e.stopPropagation();
                 setIsTfOpen(!isTfOpen);
               }}
-              className={`px-3 py-1.5 glass-panel rounded border-white/10 text-[10px] font-black flex items-center gap-2 transition-all ${isTfOpen ? 'bg-white/10 text-bull border-bull/30' : 'bg-white/5 text-white/70 hover:bg-white/10'}`}
+              className={`px-3 py-1.5 rounded border border-white/10 text-[10px] font-black flex items-center gap-2 transition-all ${isTfOpen ? 'bg-[#2b2f36] text-bull border-bull/50' : 'bg-[#2b2f36] text-white/70 hover:bg-[#363a45]'}`}
             >
               {activeTimeframe.toUpperCase()}
               <span className={`text-[8px] transition-transform ${isTfOpen ? 'rotate-180 opacity-100' : 'opacity-40'}`}>▼</span>
             </button>
             
             {isTfOpen && (
-              <div className="absolute right-0 top-full mt-1 w-24 glass-panel bg-[#1e2329] border-white/10 rounded shadow-2xl z-50 overflow-hidden">
+              <div 
+                className="absolute right-0 top-full mt-1 w-24 bg-[#1e2329] border border-white/10 rounded shadow-2xl overflow-hidden shadow-black"
+                style={{ zIndex: 101, pointerEvents: 'auto' }}
+              >
                 <div className="py-1">
                   {timeframes.map(tf => (
                     <div
@@ -83,11 +87,11 @@ const TradingView: React.FC = () => {
                       onMouseDown={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
-                        console.log('TF Item Clicked:', tf);
+                        console.log('TF Selection:', tf);
                         setActiveTimeframe(tf);
                         setIsTfOpen(false);
                       }}
-                      className={`px-4 py-2 text-[10px] font-bold cursor-pointer transition-colors ${activeTimeframe === tf ? 'text-bull bg-white/5' : 'text-white/50 hover:bg-white/5'}`}
+                      className={`px-4 py-2 text-[10px] font-bold cursor-pointer transition-colors ${activeTimeframe === tf ? 'text-bull bg-white/10' : 'text-white/70 hover:bg-[#2b2f36] hover:text-white'}`}
                     >
                       {tf.toUpperCase()}
                     </div>
