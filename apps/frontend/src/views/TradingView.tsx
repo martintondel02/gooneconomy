@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useMarketStore } from '../store/useMarketStore';
 import Chart from '../components/Chart';
 import AssetPanel from '../components/AssetPanel';
@@ -13,6 +13,20 @@ const TradingView: React.FC = () => {
     activeTimeframe,
     setActiveTimeframe,
   } = useMarketStore();
+
+  const [isTfOpen, setIsTfOpen] = useState(false);
+  const tfRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown on click outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (tfRef.current && !tfRef.current.contains(event.target as Node)) {
+        setIsTfOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const timeframes = ['1s', '5s', '15s', '1m', '5m', '15m', '1h', '3h', '12h', '24h'];
 
@@ -43,29 +57,38 @@ const TradingView: React.FC = () => {
           <div className="flex gap-6">
             <div className="flex flex-col">
               <span className="text-[9px] font-bold text-white/30 uppercase">MCAP</span>
-              <span className="text-[11px] font-mono font-bold">${formatLargeNumber(marketCaps[activeAsset?.ticker] || 0)}</span>
+              <span className="text-[11px] font-mono font-bold text-white/80">${formatLargeNumber(marketCaps[activeAsset?.ticker] || 0)}</span>
             </div>
           </div>
 
           {/* Timeframe Dropdown */}
-          <div className="ml-auto relative group">
-            <button className="px-3 py-1.5 glass-panel rounded bg-white/5 border-white/10 text-[10px] font-black text-white/70 flex items-center gap-2 hover:bg-white/10 transition-all">
+          <div className="ml-auto relative" ref={tfRef}>
+            <button 
+              onClick={() => setIsTfOpen(!isTfOpen)}
+              className={`px-3 py-1.5 glass-panel rounded border-white/10 text-[10px] font-black flex items-center gap-2 transition-all ${isTfOpen ? 'bg-white/10 text-bull border-bull/30' : 'bg-white/5 text-white/70 hover:bg-white/10'}`}
+            >
               {activeTimeframe.toUpperCase()}
-              <span className="text-[8px] opacity-50">▼</span>
+              <span className={`text-[8px] transition-transform ${isTfOpen ? 'rotate-180 opacity-100' : 'opacity-40'}`}>▼</span>
             </button>
-            <div className="absolute right-0 top-full mt-1 w-24 glass-panel bg-[#1e2329] border-white/10 rounded shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
-              <div className="py-1">
-                {timeframes.map(tf => (
-                  <div
-                    key={tf}
-                    onClick={() => setActiveTimeframe(tf)}
-                    className={`px-4 py-2 text-[10px] font-bold cursor-pointer hover:bg-white/5 transition-colors ${activeTimeframe === tf ? 'text-bull bg-white/5' : 'text-white/50'}`}
-                  >
-                    {tf.toUpperCase()}
-                  </div>
-                ))}
+            
+            {isTfOpen && (
+              <div className="absolute right-0 top-full mt-1 w-24 glass-panel bg-[#1e2329] border-white/10 rounded shadow-2xl z-50 overflow-hidden">
+                <div className="py-1">
+                  {timeframes.map(tf => (
+                    <div
+                      key={tf}
+                      onClick={() => {
+                        setActiveTimeframe(tf);
+                        setIsTfOpen(false);
+                      }}
+                      className={`px-4 py-2 text-[10px] font-bold cursor-pointer transition-colors ${activeTimeframe === tf ? 'text-bull bg-white/5' : 'text-white/50 hover:bg-white/5'}`}
+                    >
+                      {tf.toUpperCase()}
+                    </div>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
           </div>
         </div>
 
