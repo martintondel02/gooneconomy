@@ -62,11 +62,11 @@ const Chart: React.FC<ChartProps> = ({ assetId, ticker }) => {
     });
 
     const candleSeries = chart.addCandlestickSeries({
-      upColor: '#00f3ff',
-      downColor: '#ff00ff',
+      upColor: '#2ebd85',
+      downColor: '#f6465d',
       borderVisible: false,
-      wickUpColor: '#00f3ff',
-      wickDownColor: '#ff00ff',
+      wickUpColor: '#2ebd85',
+      wickDownColor: '#f6465d',
     });
 
     // @ts-ignore
