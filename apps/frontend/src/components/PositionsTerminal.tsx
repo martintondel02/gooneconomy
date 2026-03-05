@@ -3,12 +3,23 @@ import { useMarketStore } from '../store/useMarketStore';
 
 const PositionsTerminal: React.FC = () => {
   const { positions, assets, closePosition } = useMarketStore();
+  const [activeTab, setActiveTab] = React.useState('POSITIONS');
 
   return (
     <div className="flex-1 flex flex-col min-h-0 bg-black/20">
-      <div className="flex gap-6 px-6 terminal-border-b bg-white/[0.01]">
-        <button className="py-3 text-[10px] font-black uppercase tracking-widest text-bull border-b-2 border-bull">Active Positions ({positions.length})</button>
-        <button className="py-3 text-[10px] font-black uppercase tracking-widest text-white/20 hover:text-white/50">Trade History</button>
+      <div className="flex gap-8 px-6 terminal-border-b bg-white/[0.01]">
+        <button 
+          onClick={() => setActiveTab('POSITIONS')}
+          className={`py-3 text-[11px] font-bold uppercase tracking-widest terminal-tab ${activeTab === 'POSITIONS' ? 'active' : ''}`}
+        >
+          Active Positions ({positions.length})
+        </button>
+        <button 
+          onClick={() => setActiveTab('HISTORY')}
+          className={`py-3 text-[11px] font-bold uppercase tracking-widest terminal-tab ${activeTab === 'HISTORY' ? 'active' : ''}`}
+        >
+          Trade History
+        </button>
       </div>
 
       <div className="flex-1 overflow-auto custom-scrollbar">

@@ -39,7 +39,10 @@ const AssetPanel: React.FC = () => {
                 </span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-[10px] font-bold text-white/30 uppercase tracking-tighter">MCAP: ${formatLargeNumber(currentMCap)}</span>
+                <div className="flex flex-col items-start">
+                  <span className="text-[10px] font-bold text-white/30 uppercase tracking-tighter leading-none">MCAP</span>
+                  <span className="text-[10px] font-bold text-white/30 leading-tight">${formatLargeNumber(currentMCap)}</span>
+                </div>
                 <span className={`text-[10px] font-bold ${isUp ? 'text-bull' : 'text-bear'}`}>
                   {isUp ? '+' : ''}{((Math.abs(currentMCap - initialMCap) / initialMCap) * 100).toFixed(1)}%
                 </span>
