@@ -1,0 +1,14 @@
+# Node.js
+node_modules/
+dist/
+.npm/
+
+# Prisma
+.env
+
+# Docker
+postgres_data/
+
+# OS Files
+.DS_Store
+Thumbs.db

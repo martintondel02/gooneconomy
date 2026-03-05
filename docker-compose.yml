@@ -1,0 +1,60 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: gooneconomy-db
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: gooneconomy
+    ports:
+      - "25432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d gooneconomy"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: gooneconomy-redis
+    ports:
+      - "26379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  backend:
+    build:
+      context: .
+      dockerfile: apps/backend/Dockerfile
+    container_name: gooneconomy-backend
+    ports:
+      - "28081:28081"
+    environment:
+      DATABASE_URL: "postgresql://user:password@db:5432/gooneconomy?schema=public"
+      REDIS_URL: "redis://redis:6379"
+      PORT: 28081
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: .
+      dockerfile: apps/frontend/Dockerfile
+    container_name: gooneconomy-frontend
+    ports:
+      - "28080:28080"
+    environment:
+      VITE_API_URL: "http://localhost:28081"
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:

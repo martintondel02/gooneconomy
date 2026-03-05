@@ -1,0 +1,84 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum AssetType {
+  STOCK
+  CRYPTO
+  COMMODITY
+}
+
+model User {
+  id           String   @id @default(uuid())
+  username     String   @unique
+  cashBalance  Float    @default(100.0)
+  statusScore  Int      @default(0)
+  inventory    Json     @default("{}") // ticker -> quantity
+  trades       Trade[]
+  statusItems  UserStatusItem[]
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Asset {
+  id           String    @id @default(uuid())
+  ticker       String    @unique
+  name         String
+  type         AssetType
+  currentPrice Float
+  totalSupply  Float
+  trades       Trade[]
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+}
+
+enum TradeType {
+  BUY
+  SELL
+  BET
+}
+
+model Trade {
+  id               String    @id @default(uuid())
+  userId           String
+  user             User      @relation(fields: [userId], references: [id])
+  assetId          String
+  asset            Asset     @relation(fields: [assetId], references: [id])
+  type             TradeType
+  quantity         Float
+  priceAtExecution Float
+  timestamp        DateTime  @default(now())
+}
+
+model StatusItem {
+  id          String   @id @default(uuid())
+  name        String
+  category    String   // Real Estate, Vehicles, Flex
+  price       Float
+  bonusScore  Int
+  users       UserStatusItem[]
+}
+
+model UserStatusItem {
+  id           String     @id @default(uuid())
+  userId       String
+  user         User       @relation(fields: [userId], references: [id])
+  statusItemId String
+  statusItem   StatusItem @relation(fields: [statusItemId], references: [id])
+  acquiredAt   DateTime   @default(now())
+}
+
+model MarketEvent {
+  id          String   @id @default(uuid())
+  type        String
+  description String
+  magnitude   Float
+  duration    Int      // milliseconds
+  assetTarget String?  // ticker or 'ALL'
+  timestamp   DateTime @default(now())
+}
