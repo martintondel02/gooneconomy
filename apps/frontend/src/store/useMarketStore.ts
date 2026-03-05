@@ -10,11 +10,13 @@ interface MarketState {
   user: any | null;
   activeAsset: any | null;
   activeTimeframe: string;
+  activeTab: 'TRADING' | 'PORTFOLIO' | 'SHOP';
   socket: Socket | null;
   connect: () => void;
   disconnect: () => void;
   setActiveAsset: (asset: any) => void;
   setActiveTimeframe: (tf: string) => void;
+  setActiveTab: (tab: 'TRADING' | 'PORTFOLIO' | 'SHOP') => void;
   openPosition: (side: 'LONG' | 'SHORT', margin: number, leverage: number) => Promise<void>;
   closePosition: (positionId: string) => Promise<void>;
   claimStimulus: () => Promise<void>;
@@ -29,6 +31,7 @@ export const useMarketStore = create<MarketState>((set, get) => ({
   user: null,
   activeAsset: null,
   activeTimeframe: '1m',
+  activeTab: 'TRADING',
   socket: null,
 
   connect: () => {
@@ -82,6 +85,8 @@ export const useMarketStore = create<MarketState>((set, get) => ({
   setActiveAsset: (asset: any) => set({ activeAsset: asset }),
 
   setActiveTimeframe: (tf: string) => set({ activeTimeframe: tf }),
+
+  setActiveTab: (tab: 'TRADING' | 'PORTFOLIO' | 'SHOP') => set({ activeTab: tab }),
 
   openPosition: async (side, margin, leverage) => {
     const { activeAsset } = get();
