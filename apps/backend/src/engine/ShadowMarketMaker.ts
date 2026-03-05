@@ -1,24 +1,30 @@
 import { MatchingEngine } from './MatchingEngine';
 
+interface AssetConfig {
+  id: string;
+  volatility: number;
+}
+
 export class ShadowMarketMaker {
   private engine: MatchingEngine;
-  private assetIds: string[];
+  private assets: AssetConfig[];
   private interval: NodeJS.Timeout | null = null;
   
-  constructor(engine: MatchingEngine, assetIds: string[]) {
+  constructor(engine: MatchingEngine, assets: AssetConfig[]) {
     this.engine = engine;
-    this.assetIds = assetIds;
+    this.assets = assets;
   }
 
   public start() {
     // Every 5 seconds, inject some noise
     this.interval = setInterval(() => {
-      this.assetIds.forEach(id => {
+      this.assets.forEach(asset => {
         const direction = Math.random() > 0.5 ? 'UP' : 'DOWN';
-        // Random volatility between 0.01% and 0.1%
-        const magnitude = (Math.random() * 0.0009) + 0.0001; 
+        // Base volatility modified by asset specific multiplier
+        const baseVol = (Math.random() * 0.0009) + 0.0001; 
+        const magnitude = baseVol * asset.volatility;
         
-        this.engine.injectVolatility(id, direction, magnitude);
+        this.engine.injectVolatility(asset.id, direction, magnitude);
       });
     }, 5000);
   }

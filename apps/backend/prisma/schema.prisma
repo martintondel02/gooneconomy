@@ -20,6 +20,7 @@ model User {
   statusScore  Int      @default(0)
   inventory    Json     @default("{}") // ticker -> quantity
   trades       Trade[]
+  positions    Position[]
   statusItems  UserStatusItem[]
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
@@ -33,8 +34,31 @@ model Asset {
   currentPrice Float
   totalSupply  Float
   trades       Trade[]
+  positions    Position[]
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
+}
+
+enum PositionSide {
+  LONG
+  SHORT
+}
+
+model Position {
+  id               String       @id @default(uuid())
+  userId           String
+  user             User         @relation(fields: [userId], references: [id])
+  assetId          String
+  asset            Asset        @relation(fields: [assetId], references: [id])
+  side             PositionSide
+  entryPrice       Float
+  quantity         Float
+  leverage         Int          @default(1)
+  margin           Float
+  liquidationPrice Float
+  isActive         Boolean      @default(true)
+  openedAt         DateTime     @default(now())
+  closedAt         DateTime?
 }
 
 enum TradeType {

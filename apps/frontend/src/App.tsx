@@ -4,14 +4,24 @@ import { useMarketStore } from './store/useMarketStore';
 import Chart from './components/Chart';
 
 function App() {
-  const { prices, connect, disconnect } = useMarketStore();
+  const { 
+    prices, 
+    assets, 
+    positions, 
+    activeAsset, 
+    connect, 
+    disconnect, 
+    setActiveAsset, 
+    openPosition, 
+    closePosition 
+  } = useMarketStore();
 
   useEffect(() => {
     connect();
     return () => disconnect();
   }, [connect, disconnect]);
 
-  const tickers = ['GOON', 'TSLAX', 'GOLD', 'MVDA', 'KNG', 'BMD'];
+  const tickers = ['GOON', 'BTC', 'ETH', 'NVDA', 'PUMPKIN', 'MOSSAD', 'AAPL', 'TSLA', 'GOLD'];
 
   return (
     <div className="flex flex-col h-screen">
@@ -20,13 +30,13 @@ function App() {
         <div className="whitespace-nowrap animate-marquee px-4 text-sm">
           {tickers.map(ticker => (
             <span key={ticker} className="mx-4 text-cyan-400 font-mono">
-              {ticker}: ${prices[ticker]?.toFixed(2) || '---'}
+              {ticker}: ${prices[ticker]?.toFixed(prices[ticker] < 1 ? 4 : 2) || '---'}
             </span>
           ))}
           {/* Duplicate for smooth loop */}
           {tickers.map(ticker => (
             <span key={`${ticker}-loop`} className="mx-4 text-cyan-400 font-mono">
-              {ticker}: ${prices[ticker]?.toFixed(2) || '---'}
+              {ticker}: ${prices[ticker]?.toFixed(prices[ticker] < 1 ? 4 : 2) || '---'}
             </span>
           ))}
         </div>
@@ -35,16 +45,19 @@ function App() {
       <div className="flex flex-1 overflow-hidden">
         {/* Sidebar */}
         <aside className="w-20 glass-panel m-4 mr-0 flex flex-col items-center py-8 gap-8">
-          <div className="p-3 cursor-pointer hover:bg-white/10 rounded-xl transition-colors">
+          <div className="p-3 cursor-pointer bg-white/10 rounded-xl transition-colors text-cyan-400">
             <TrendingUp size={24} />
           </div>
-          <div className="p-3 cursor-pointer hover:bg-white/10 rounded-xl transition-colors">
+          <div className="p-3 cursor-pointer hover:bg-white/10 rounded-xl transition-colors text-white/50">
+            <LayoutGrid size={24} />
+          </div>
+          <div className="p-3 cursor-pointer hover:bg-white/10 rounded-xl transition-colors text-white/50">
             <Wallet size={24} />
           </div>
-          <div className="p-3 cursor-pointer hover:bg-white/10 rounded-xl transition-colors">
+          <div className="p-3 cursor-pointer hover:bg-white/10 rounded-xl transition-colors text-white/50">
             <ShoppingBag size={24} />
           </div>
-          <div className="mt-auto p-3 cursor-pointer hover:bg-white/10 rounded-xl transition-colors">
+          <div className="mt-auto p-3 cursor-pointer hover:bg-white/10 rounded-xl transition-colors text-white/50">
             <Settings size={24} />
           </div>
         </aside>
@@ -55,62 +68,117 @@ function App() {
           <section className="col-span-12 row-span-1 glass-panel flex items-center px-8 justify-between">
             <div className="flex gap-8">
               <div>
-                <p className="text-xs text-white/50 uppercase">Net Worth</p>
-                <p className="text-2xl font-bold text-cyan-400">$10,420.69</p>
+                <p className="text-xs text-white/50 uppercase tracking-widest">Global Hierarchy</p>
+                <p className="text-2xl font-bold text-cyan-400">$10,420.69 <span className="text-xs font-normal text-white/30 ml-2">#1,242 Rank</span></p>
               </div>
+              <div className="h-8 w-px bg-white/10"></div>
               <div>
-                <p className="text-xs text-white/50 uppercase">Liquid Cash</p>
+                <p className="text-xs text-white/50 uppercase tracking-widest">Liquid Assets</p>
                 <p className="text-2xl font-bold">$1,242.00</p>
               </div>
             </div>
             <div className="flex gap-4">
-              <button className="px-4 py-2 glass-panel hover:bg-white/10 transition-all text-sm font-medium">Claim Stimulus</button>
+              <div className="flex flex-col items-end mr-4">
+                <p className="text-[10px] text-white/30 uppercase">Status Tier</p>
+                <p className="text-sm font-bold text-yellow-400">GOLDEN GOON</p>
+              </div>
+              <button className="px-6 py-2 glass-panel border-cyan-500/30 hover:bg-cyan-500/10 transition-all text-xs font-bold tracking-widest uppercase">Claim Stimulus</button>
             </div>
           </section>
 
-          {/* Main Chart */}
-          <section className="col-span-8 row-span-5 glass-panel p-4 flex flex-col">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-lg font-bold">GOON / USD</h2>
-              <div className="flex gap-2">
-                <span className="text-xs px-2 py-1 glass-panel">1M</span>
-                <span className="text-xs px-2 py-1 glass-panel">5M</span>
-                <span className="text-xs px-2 py-1 glass-panel bg-white/10">15M</span>
-                <span className="text-xs px-2 py-1 glass-panel">1H</span>
+          {/* Asset List & Chart */}
+          <section className="col-span-8 row-span-5 flex flex-col gap-4">
+            <div className="h-16 flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+              {assets.map(asset => (
+                <button 
+                  key={asset.id}
+                  onClick={() => setActiveAsset(asset)}
+                  className={`px-4 py-2 glass-panel flex-shrink-0 flex flex-col justify-center min-w-[120px] transition-all ${activeAsset?.id === asset.id ? 'bg-white/10 border-cyan-500/50' : 'hover:bg-white/5'}`}
+                >
+                  <span className="text-[10px] text-white/50 font-bold">{asset.ticker}</span>
+                  <span className={`text-sm font-mono ${prices[asset.ticker] > asset.price ? 'text-cyan-400' : 'text-magenta-400'}`}>
+                    ${prices[asset.ticker]?.toFixed(prices[asset.ticker] < 1 ? 4 : 2) || '---'}
+                  </span>
+                </button>
+              ))}
+            </div>
+            
+            <div className="flex-1 glass-panel p-4 flex flex-col relative overflow-hidden">
+              <div className="flex justify-between items-center mb-4 z-10">
+                <div className="flex items-center gap-4">
+                  <h2 className="text-xl font-black tracking-tighter italic">{activeAsset?.name || 'Loading...'}</h2>
+                  <span className="text-xs font-mono text-white/30">{activeAsset?.ticker} / USD</span>
+                </div>
+                <div className="flex gap-2">
+                  <span className="text-[10px] px-3 py-1 glass-panel bg-white/10 border-cyan-500/20 text-cyan-400 font-bold">LIVE FEED</span>
+                </div>
+              </div>
+              <div className="flex-1 rounded-lg overflow-hidden">
+                {activeAsset && <Chart key={activeAsset.id} assetId={activeAsset.id} ticker={activeAsset.ticker} />}
               </div>
             </div>
-            <div className="flex-1 rounded-lg overflow-hidden">
-              <Chart assetId="1" ticker="GOON" />
-            </div>
           </section>
 
-          {/* Active Trades & Betting */}
+          {/* Active Positions & Betting */}
           <div className="col-span-4 row-span-5 flex flex-col gap-4">
             <section className="flex-1 glass-panel p-4 overflow-hidden flex flex-col">
-              <h2 className="text-sm font-bold uppercase text-white/50 mb-4 tracking-wider">Live Trades</h2>
-              <div className="flex-1 overflow-y-auto space-y-2 pr-2">
-                {[1,2,3,4,5,6,7,8].map(i => (
-                  <div key={i} className="text-xs flex justify-between p-2 rounded bg-white/5 border border-white/5">
-                    <span className={i % 2 === 0 ? "text-cyan-400" : "text-magenta-400"}>
-                      User{i} {i % 2 === 0 ? 'Bought' : 'Sold'} 0.5 GOON
-                    </span>
-                    <span className="text-white/30">12:0{i}:21</span>
+              <h2 className="text-xs font-black uppercase text-white/30 mb-4 tracking-[0.2em]">Active Positions</h2>
+              <div className="flex-1 overflow-y-auto space-y-3 pr-2 custom-scrollbar">
+                {positions.length === 0 ? (
+                  <div className="h-full flex items-center justify-center">
+                    <p className="text-[10px] uppercase tracking-widest text-white/10 font-bold">No Active Trades</p>
                   </div>
-                ))}
+                ) : (
+                  positions.map(pos => (
+                    <div key={pos.id} className="p-3 rounded-lg bg-white/[0.03] border border-white/5 flex flex-col gap-2">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <span className={`text-[10px] font-black px-2 py-0.5 rounded ${pos.side === 'LONG' ? 'bg-cyan-500/20 text-cyan-400' : 'bg-magenta-500/20 text-magenta-400'}`}>
+                            {pos.side} {pos.leverage}X
+                          </span>
+                          <span className="ml-2 text-xs font-bold text-white/70">{assets.find(a => a.id === pos.assetId)?.ticker}</span>
+                        </div>
+                        <span className={`text-sm font-mono font-bold ${pos.pnl >= 0 ? 'text-cyan-400' : 'text-magenta-400'}`}>
+                          {pos.pnl >= 0 ? '+' : ''}${pos.pnl.toFixed(2)}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center text-[10px] font-mono text-white/30">
+                        <span>Entry: ${pos.entryPrice.toFixed(2)}</span>
+                        <button 
+                          onClick={() => closePosition(pos.id)}
+                          className="px-3 py-1 rounded bg-white/5 hover:bg-white/10 text-white/70 transition-colors uppercase font-black tracking-tighter"
+                        >
+                          Close
+                        </button>
+                      </div>
+                    </div>
+                  ))
+                )}
               </div>
             </section>
             
-            <section className="h-48 glass-panel p-4">
-              <h2 className="text-sm font-bold uppercase text-white/50 mb-4 tracking-wider">Quick Bet</h2>
+            <section className="h-56 glass-panel p-4 flex flex-col">
+              <h2 className="text-xs font-black uppercase text-white/30 mb-4 tracking-[0.2em]">Execute Trade</h2>
               <div className="flex gap-2 mb-4">
-                <button className="flex-1 py-3 rounded bg-cyan-500/20 border border-cyan-500/50 text-cyan-400 font-bold hover:bg-cyan-500/30 transition-all">LONG</button>
-                <button className="flex-1 py-3 rounded bg-magenta-500/20 border border-magenta-500/50 text-magenta-400 font-bold hover:bg-magenta-500/30 transition-all">SHORT</button>
+                <button 
+                  onClick={() => openPosition('LONG', 100, 5)}
+                  className="flex-1 py-4 rounded-xl bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 font-black hover:bg-cyan-500/20 transition-all text-sm tracking-widest"
+                >
+                  LONG
+                </button>
+                <button 
+                  onClick={() => openPosition('SHORT', 100, 5)}
+                  className="flex-1 py-4 rounded-xl bg-magenta-500/10 border border-magenta-500/30 text-magenta-400 font-black hover:bg-magenta-500/20 transition-all text-sm tracking-widest"
+                >
+                  SHORT
+                </button>
               </div>
               <div className="flex gap-2">
-                <button className="flex-1 py-1 text-xs glass-panel bg-white/10">2x</button>
-                <button className="flex-1 py-1 text-xs glass-panel">5x</button>
-                <button className="flex-1 py-1 text-xs glass-panel">10x</button>
+                {[2, 5, 10, 25].map(lev => (
+                  <button key={lev} className={`flex-1 py-2 text-[10px] font-black glass-panel ${lev === 5 ? 'bg-white/10 border-white/20' : 'text-white/30'}`}>{lev}X</button>
+                ))}
               </div>
+              <p className="mt-4 text-[9px] text-center text-white/20 font-bold uppercase tracking-tighter">Margin: $100.00 | Liquidation: $---</p>
             </section>
           </div>
         </main>
