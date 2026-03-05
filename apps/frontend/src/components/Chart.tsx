@@ -73,7 +73,8 @@ const Chart: React.FC<ChartProps> = ({ assetId, ticker }) => {
     candleSeriesRef.current = candleSeries;
 
     // Fetch initial candles
-    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:28081';
+    const host = window.location.hostname;
+    const apiUrl = `http://${host}:28081`;
     fetch(`${apiUrl}/candles/${assetId}?tf=${activeTimeframe}`)
       .then(res => res.json())
       .then(data => {

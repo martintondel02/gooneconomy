@@ -34,9 +34,13 @@ export const useMarketStore = create<MarketState>((set, get) => ({
   connect: () => {
     if (get().socket) return;
     
-    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:28081';
+    const host = window.location.hostname;
+    const apiUrl = `http://${host}:28081`;
     const socket = io(apiUrl);
     
+    socket.on('connect', () => console.log('Connected to backend:', apiUrl));
+    socket.on('connect_error', (err) => console.error('Socket connection error:', err));
+
     socket.on('market:prices', (prices: Record<string, number>) => {
       set({ prices });
     });
@@ -83,7 +87,8 @@ export const useMarketStore = create<MarketState>((set, get) => ({
     const { activeAsset } = get();
     if (!activeAsset) return;
 
-    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:28081';
+    const host = window.location.hostname;
+    const apiUrl = `http://${host}:28081`;
     await fetch(`${apiUrl}/trade/open`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -98,7 +103,8 @@ export const useMarketStore = create<MarketState>((set, get) => ({
   },
 
   closePosition: async (positionId: string) => {
-    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:28081';
+    const host = window.location.hostname;
+    const apiUrl = `http://${host}:28081`;
     await fetch(`${apiUrl}/trade/close`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -107,7 +113,8 @@ export const useMarketStore = create<MarketState>((set, get) => ({
   },
 
   claimStimulus: async () => {
-    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:28081';
+    const host = window.location.hostname;
+    const apiUrl = `http://${host}:28081`;
     const res = await fetch(`${apiUrl}/user/claim-stimulus`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
