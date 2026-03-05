@@ -84,7 +84,10 @@ export const useMarketStore = create<MarketState>((set, get) => ({
 
   setActiveAsset: (asset: any) => set({ activeAsset: asset }),
 
-  setActiveTimeframe: (tf: string) => set({ activeTimeframe: tf }),
+  setActiveTimeframe: (tf: string) => {
+    console.log('Changing timeframe to:', tf);
+    set({ activeTimeframe: tf });
+  },
 
   setActiveTab: (tab: 'TRADING' | 'PORTFOLIO' | 'SHOP') => set({ activeTab: tab }),
 

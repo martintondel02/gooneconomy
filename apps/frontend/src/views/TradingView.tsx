@@ -77,7 +77,8 @@ const TradingView: React.FC = () => {
                   {timeframes.map(tf => (
                     <div
                       key={tf}
-                      onClick={() => {
+                      onMouseDown={(e) => {
+                        e.preventDefault();
                         setActiveTimeframe(tf);
                         setIsTfOpen(false);
                       }}
@@ -86,6 +87,7 @@ const TradingView: React.FC = () => {
                       {tf.toUpperCase()}
                     </div>
                   ))}
+
                 </div>
               </div>
             )}
