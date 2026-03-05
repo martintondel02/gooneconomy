@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { createChart, ColorType, ISeriesApi } from 'lightweight-charts';
 import { useMarketStore } from '../store/useMarketStore';
 
@@ -10,6 +10,7 @@ interface ChartProps {
 const Chart: React.FC<ChartProps> = ({ assetId, ticker }) => {
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const candleSeriesRef = useRef<ISeriesApi<'Candlestick'>>(null);
+  const [loading, setLoading] = useState(true);
   const { marketCaps, activeTimeframe } = useMarketStore();
 
   // Price update effect
@@ -39,17 +40,21 @@ const Chart: React.FC<ChartProps> = ({ assetId, ticker }) => {
     const chart = createChart(chartContainerRef.current, {
       layout: {
         background: { type: ColorType.Solid, color: 'transparent' },
-        textColor: 'rgba(255, 255, 255, 0.5)',
+        textColor: 'rgba(255, 255, 255, 0.4)',
       },
       grid: {
-        vertLines: { color: 'rgba(255, 255, 255, 0.05)' },
-        horzLines: { color: 'rgba(255, 255, 255, 0.05)' },
+        vertLines: { color: 'rgba(255, 255, 255, 0.03)' },
+        horzLines: { color: 'rgba(255, 255, 255, 0.03)' },
       },
       width: chartContainerRef.current.clientWidth,
       height: 400,
       timeScale: {
         timeVisible: true,
         secondsVisible: true,
+        borderColor: 'rgba(255, 255, 255, 0.05)',
+      },
+      rightPriceScale: {
+        borderColor: 'rgba(255, 255, 255, 0.05)',
       },
       localization: {
         priceFormatter: (price: number) => {
@@ -63,10 +68,10 @@ const Chart: React.FC<ChartProps> = ({ assetId, ticker }) => {
 
     const candleSeries = chart.addCandlestickSeries({
       upColor: '#2ebd85',
-      downColor: '#f6465d',
+      downColor: '#ff4d6d',
       borderVisible: false,
       wickUpColor: '#2ebd85',
-      wickDownColor: '#f6465d',
+      wickDownColor: '#ff4d6d',
     });
 
     // @ts-ignore
@@ -75,13 +80,16 @@ const Chart: React.FC<ChartProps> = ({ assetId, ticker }) => {
     // Fetch initial candles
     const host = window.location.hostname;
     const apiUrl = `http://${host}:28081`;
+    setLoading(true);
     fetch(`${apiUrl}/candles/${assetId}?tf=${activeTimeframe}`)
       .then(res => res.json())
       .then(data => {
         if (data.length > 0) {
           candleSeries.setData(data);
         }
-      });
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
 
     const handleResize = () => {
       chart.applyOptions({ width: chartContainerRef.current?.clientWidth });
@@ -95,7 +103,17 @@ const Chart: React.FC<ChartProps> = ({ assetId, ticker }) => {
     };
   }, [assetId, activeTimeframe]);
 
-  return <div ref={chartContainerRef} className="w-full h-full" />;
+  return (
+    <div className="w-full h-full relative">
+      {loading && (
+        <div className="absolute inset-0 z-20 flex flex-col gap-4 p-8 bg-black/40">
+          <div className="flex-1 skeleton opacity-20"></div>
+          <div className="h-24 skeleton opacity-10"></div>
+        </div>
+      )}
+      <div ref={chartContainerRef} className="w-full h-full" />
+    </div>
+  );
 };
 
 export default Chart;
