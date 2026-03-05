@@ -1,20 +1,17 @@
 import React from 'react';
 import { useMarketStore } from '../store/useMarketStore';
 import Chart from '../components/Chart';
+import AssetPanel from '../components/AssetPanel';
+import OrderTerminal from '../components/OrderTerminal';
+import PositionsTerminal from '../components/PositionsTerminal';
 
 const TradingView: React.FC = () => {
   const { 
     prices, 
     marketCaps,
-    assets, 
-    positions, 
-    user,
     activeAsset, 
     activeTimeframe,
-    setActiveAsset, 
     setActiveTimeframe,
-    openPosition, 
-    closePosition 
   } = useMarketStore();
 
   const timeframes = ['1s', '5s', '15s', '1m', '5m', '15m', '1h', '3h', '12h', '24h'];
@@ -22,126 +19,72 @@ const TradingView: React.FC = () => {
   const formatLargeNumber = (num: number) => {
     if (num >= 1e9) return (num / 1e9).toFixed(2) + 'B';
     if (num >= 1e6) return (num / 1e6).toFixed(2) + 'M';
-    if (num >= 1e3) return (num / 1e3).toFixed(2) + 'K';
-    return num.toFixed(2);
+    return (num / 1e3).toFixed(1) + 'K';
   };
 
-  const unrealizedPnL = positions.reduce((acc, p) => acc + (p.pnl || 0), 0);
-
   return (
-    <div className="flex-1 p-4 grid grid-cols-12 grid-rows-6 gap-4 overflow-hidden">
-      {/* Asset List & Chart */}
-      <section className="col-span-8 row-span-6 flex flex-col gap-4 overflow-hidden">
-        <div className="h-16 flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
-          {assets.map(asset => (
-            <button 
-              key={asset.id}
-              onClick={() => setActiveAsset(asset)}
-              className={`px-4 py-2 glass-panel flex-shrink-0 flex flex-col justify-center min-w-[120px] transition-all ${activeAsset?.id === asset.id ? 'bg-white/10 border-cyan-500/50' : 'hover:bg-white/5'}`}
-            >
-              <div className="flex justify-between items-center w-full">
-                <span className="text-[10px] text-white/50 font-bold">{asset.ticker}</span>
-                <span className="text-[8px] text-white/30 uppercase font-mono">MCAP</span>
-              </div>
-              <span className={`text-sm font-mono ${marketCaps[asset.ticker] > (asset.price * asset.supply) ? 'text-cyan-400' : 'text-magenta-400'}`}>
-                ${formatLargeNumber(marketCaps[asset.ticker] || 0)}
-              </span>
-            </button>
-          ))}
-        </div>
-        
-        <div className="flex-1 glass-panel p-4 flex flex-col relative overflow-hidden">
-          <div className="flex justify-between items-center mb-4 z-10">
-            <div className="flex items-center gap-4">
-              <h2 className="text-xl font-black tracking-tighter italic">{activeAsset?.name || 'Loading...'}</h2>
-              <div className="flex flex-col">
-                <span className="text-xs font-mono text-white/30">MCAP CHART / {activeTimeframe?.toUpperCase()}</span>
-                <span className="text-[10px] text-cyan-400 font-mono">PRICE: ${prices[activeAsset?.ticker]?.toFixed(2) || '---'}</span>
-              </div>
-            </div>
-            <div className="flex gap-1 overflow-x-auto pb-1 max-w-[400px]">
-              {timeframes.map(tf => (
-                <button
-                  key={tf}
-                  onClick={() => setActiveTimeframe(tf)}
-                  className={`text-[9px] px-2 py-1 glass-panel transition-all font-black ${activeTimeframe === tf ? 'bg-cyan-500/20 text-cyan-400 border-cyan-500/50' : 'hover:bg-white/5 text-white/30'}`}
-                >
-                  {tf.toUpperCase()}
-                </button>
-              ))}
-            </div>
-          </div>
-          <div className="flex-1 rounded-lg overflow-hidden">
-            {activeAsset && <Chart key={`${activeAsset.id}-${activeTimeframe}`} assetId={activeAsset.id} ticker={activeAsset.ticker} />}
-          </div>
-        </div>
-      </section>
+    <div className="flex-1 flex overflow-hidden">
+      {/* Left: Market Selection */}
+      <AssetPanel />
 
-      {/* Active Positions & Trading */}
-      <div className="col-span-4 row-span-6 flex flex-col gap-4 overflow-hidden">
-        <section className="flex-1 glass-panel p-4 overflow-hidden flex flex-col">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xs font-black uppercase text-white/30 tracking-[0.2em]">Active Positions</h2>
-            <span className="text-[10px] text-cyan-400 font-bold font-mono">${unrealizedPnL.toFixed(2)} PnL</span>
+      {/* Center: Chart & Management */}
+      <main className="flex-1 flex flex-col min-w-0 bg-[#0a0a0f]/50">
+        {/* Asset Header Info */}
+        <div className="h-16 terminal-border-b flex items-center px-6 gap-8 bg-black/20">
+          <div className="flex items-center gap-3">
+            <h2 className="text-lg font-black tracking-tighter italic">{activeAsset?.ticker}USDT</h2>
+            <span className={`text-sm font-mono font-bold ${prices[activeAsset?.ticker] > activeAsset?.price ? 'text-cyan-400' : 'text-magenta-400'}`}>
+              ${prices[activeAsset?.ticker]?.toFixed(prices[activeAsset?.ticker] < 1 ? 4 : 2)}
+            </span>
           </div>
-          <div className="flex-1 overflow-y-auto space-y-3 pr-2 custom-scrollbar">
-            {positions.length === 0 ? (
-              <div className="h-full flex items-center justify-center">
-                <p className="text-[10px] uppercase tracking-widest text-white/10 font-bold">No Active Trades</p>
-              </div>
-            ) : (
-              positions.map(pos => (
-                <div key={pos.id} className="p-3 rounded-lg bg-white/[0.03] border border-white/5 flex flex-col gap-2">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <span className={`text-[10px] font-black px-2 py-0.5 rounded ${pos.side === 'LONG' ? 'bg-cyan-500/20 text-cyan-400' : 'bg-magenta-500/20 text-magenta-400'}`}>
-                        {pos.side} {pos.leverage}X
-                      </span>
-                      <span className="ml-2 text-xs font-bold text-white/70">{assets.find(a => a.id === pos.assetId)?.ticker}</span>
-                    </div>
-                    <span className={`text-sm font-mono font-bold ${pos.pnl >= 0 ? 'text-cyan-400' : 'text-magenta-400'}`}>
-                      {pos.pnl >= 0 ? '+' : ''}${pos.pnl.toFixed(2)}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center text-[10px] font-mono text-white/30">
-                    <span>Entry: ${pos.entryPrice.toFixed(2)}</span>
-                    <button 
-                      onClick={() => closePosition(pos.id)}
-                      className="px-3 py-1 rounded bg-white/5 hover:bg-white/10 text-white/70 transition-colors uppercase font-black tracking-tighter"
-                    >
-                      Close
-                    </button>
-                  </div>
-                </div>
-              ))
-            )}
+          
+          <div className="h-8 w-px bg-white/5"></div>
+
+          <div className="flex gap-6">
+            <div className="flex flex-col">
+              <span className="text-[9px] font-bold text-white/30 uppercase tracking-tighter">Market Cap</span>
+              <span className="text-[11px] font-mono font-bold">${formatLargeNumber(marketCaps[activeAsset?.ticker] || 0)}</span>
+            </div>
+            <div className="flex flex-col">
+              <span className="text-[9px] font-bold text-white/30 uppercase tracking-tighter">24h Low</span>
+              <span className="text-[11px] font-mono font-bold text-white/70">${(activeAsset?.price * 0.95).toFixed(2)}</span>
+            </div>
+            <div className="flex flex-col">
+              <span className="text-[9px] font-bold text-white/30 uppercase tracking-tighter">24h High</span>
+              <span className="text-[11px] font-mono font-bold text-white/70">${(activeAsset?.price * 1.05).toFixed(2)}</span>
+            </div>
           </div>
-        </section>
-        
-        <section className="h-56 glass-panel p-4 flex flex-col">
-          <h2 className="text-xs font-black uppercase text-white/30 mb-4 tracking-[0.2em]">Execute Trade</h2>
-          <div className="flex gap-2 mb-4">
-            <button 
-              onClick={() => openPosition('LONG', 100, 5)}
-              className="flex-1 py-4 rounded-xl bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 font-black hover:bg-cyan-500/20 transition-all text-sm tracking-widest"
-            >
-              LONG
-            </button>
-            <button 
-              onClick={() => openPosition('SHORT', 100, 5)}
-              className="flex-1 py-4 rounded-xl bg-magenta-500/10 border border-magenta-500/30 text-magenta-400 font-black hover:bg-magenta-500/20 transition-all text-sm tracking-widest"
-            >
-              SHORT
-            </button>
-          </div>
-          <div className="flex gap-2">
-            {[2, 5, 10, 25].map(lev => (
-              <button key={lev} className={`flex-1 py-2 text-[10px] font-black glass-panel ${lev === 5 ? 'bg-white/10 border-white/20' : 'text-white/30'}`}>{lev}X</button>
+
+          <div className="ml-auto flex gap-1">
+            {timeframes.map(tf => (
+              <button
+                key={tf}
+                onClick={() => setActiveTimeframe(tf)}
+                className={`text-[10px] px-2 py-1 rounded transition-all font-black ${activeTimeframe === tf ? 'bg-white/10 text-cyan-400' : 'text-white/30 hover:text-white/50'}`}
+              >
+                {tf.toUpperCase()}
+              </button>
             ))}
           </div>
-          <p className="mt-4 text-[9px] text-center text-white/20 font-bold uppercase tracking-tighter">Margin: $100.00 | Liquidation: $---</p>
-        </section>
-      </div>
+        </div>
+
+        {/* The Chart Area */}
+        <div className="flex-[2] relative terminal-border-b">
+          {activeAsset && (
+            <Chart 
+              key={`${activeAsset.id}-${activeTimeframe}`} 
+              assetId={activeAsset.id} 
+              ticker={activeAsset.ticker} 
+            />
+          )}
+        </div>
+
+        {/* Bottom: Positions & Orders */}
+        <PositionsTerminal />
+      </main>
+
+      {/* Right: Order Entry */}
+      <OrderTerminal />
     </div>
   );
 };

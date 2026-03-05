@@ -39,82 +39,108 @@ function App() {
   };
 
   return (
-    <div className="flex flex-col h-screen">
-      {/* Ticker Tape */}
-      <div className="h-10 glass-panel flex items-center overflow-hidden border-x-0 border-t-0 rounded-none">
-        <div className="whitespace-nowrap animate-marquee px-4 text-sm">
+    <div className="flex flex-col h-screen bg-[#050508] text-white overflow-hidden">
+      {/* High-Density Ticker Tape */}
+      <div className="h-8 glass-panel flex items-center overflow-hidden border-x-0 border-t-0 rounded-none bg-black/40">
+        <div className="whitespace-nowrap animate-marquee px-4">
+          {tickers.map(ticker => {
+            const isUp = prices[ticker] > 100; // Simplified for visual
+            return (
+              <span key={ticker} className="mx-6 text-[10px] font-mono font-bold tracking-tighter">
+                <span className="text-white/30 mr-2">{ticker}</span>
+                <span className={isUp ? 'text-cyan-400' : 'text-magenta-400'}>
+                  ${prices[ticker]?.toFixed(prices[ticker] < 1 ? 4 : 2) || '---'}
+                </span>
+              </span>
+            );
+          })}
+          {/* Loop Duplicate */}
           {tickers.map(ticker => (
-            <span key={ticker} className="mx-4 text-cyan-400 font-mono">
-              {ticker}: ${prices[ticker]?.toFixed(prices[ticker] < 1 ? 4 : 2) || '---'}
-            </span>
-          ))}
-          {/* Duplicate for smooth loop */}
-          {tickers.map(ticker => (
-            <span key={`${ticker}-loop`} className="mx-4 text-cyan-400 font-mono">
-              {ticker}: ${prices[ticker]?.toFixed(prices[ticker] < 1 ? 4 : 2) || '---'}
+            <span key={`${ticker}-loop`} className="mx-6 text-[10px] font-mono font-bold tracking-tighter">
+              <span className="text-white/30 mr-2">{ticker}</span>
+              <span className="text-cyan-400">
+                ${prices[ticker]?.toFixed(prices[ticker] < 1 ? 4 : 2) || '---'}
+              </span>
             </span>
           ))}
         </div>
       </div>
 
       <div className="flex flex-1 overflow-hidden">
-        {/* Sidebar */}
-        <aside className="w-20 glass-panel m-4 mr-0 flex flex-col items-center py-8 gap-8">
+        {/* Pro Sidebar (Left Rail) */}
+        <aside className="w-16 terminal-border-r flex flex-col items-center py-6 gap-6 bg-[#0a0a0f]">
+          <div className="mb-4">
+            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center font-black italic tracking-tighter text-black active-tick shadow-[0_0_15px_rgba(0,243,255,0.3)]">G</div>
+          </div>
+          
           <div 
             onClick={() => setActiveTab('TRADING')}
-            className={`p-3 cursor-pointer rounded-xl transition-all ${activeTab === 'TRADING' ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/30' : 'hover:bg-white/10 text-white/50'}`}
+            className={`p-3 cursor-pointer rounded-xl transition-all group relative ${activeTab === 'TRADING' ? 'bg-cyan-500/10 text-cyan-400' : 'text-white/20 hover:text-white/50'}`}
           >
-            <TrendingUp size={24} />
+            <TrendingUp size={20} />
+            {activeTab === 'TRADING' && <div className="absolute left-0 top-1/4 w-1 h-1/2 bg-cyan-400 rounded-r-full shadow-[0_0_10px_#00f3ff]"></div>}
           </div>
+          
           <div 
             onClick={() => setActiveTab('PORTFOLIO')}
-            className={`p-3 cursor-pointer rounded-xl transition-all ${activeTab === 'PORTFOLIO' ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/30' : 'hover:bg-white/10 text-white/50'}`}
+            className={`p-3 cursor-pointer rounded-xl transition-all group relative ${activeTab === 'PORTFOLIO' ? 'bg-cyan-500/10 text-cyan-400' : 'text-white/20 hover:text-white/50'}`}
           >
-            <Wallet size={24} />
+            <Wallet size={20} />
+            {activeTab === 'PORTFOLIO' && <div className="absolute left-0 top-1/4 w-1 h-1/2 bg-cyan-400 rounded-r-full shadow-[0_0_10px_#00f3ff]"></div>}
           </div>
+          
           <div 
             onClick={() => setActiveTab('SHOP')}
-            className={`p-3 cursor-pointer rounded-xl transition-all ${activeTab === 'SHOP' ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/30' : 'hover:bg-white/10 text-white/50'}`}
+            className={`p-3 cursor-pointer rounded-xl transition-all group relative ${activeTab === 'SHOP' ? 'bg-cyan-500/10 text-cyan-400' : 'text-white/20 hover:text-white/50'}`}
           >
-            <ShoppingBag size={24} />
+            <ShoppingBag size={20} />
+            {activeTab === 'SHOP' && <div className="absolute left-0 top-1/4 w-1 h-1/2 bg-cyan-400 rounded-r-full shadow-[0_0_10px_#00f3ff]"></div>}
           </div>
-          <div className="mt-auto p-3 cursor-pointer hover:bg-white/10 rounded-xl transition-colors text-white/50">
-            <Settings size={24} />
+
+          <div className="mt-auto p-3 cursor-pointer text-white/10 hover:text-white/30 transition-colors">
+            <Settings size={20} />
           </div>
         </aside>
 
         <main className="flex-1 flex flex-col overflow-hidden">
-          {/* Global Header (Persistent across views) */}
-          <section className="h-20 glass-panel m-4 mb-0 flex items-center px-8 justify-between flex-shrink-0">
-            <div className="flex gap-8">
-              <div>
-                <p className="text-[10px] text-white/30 uppercase tracking-[0.2em] font-black">Net Worth</p>
-                <p className="text-2xl font-black text-cyan-400">
-                  ${netWorth.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} 
-                </p>
+          {/* Minimalist Pro Header */}
+          <header className="h-14 terminal-border-b flex items-center px-6 justify-between bg-black/40">
+            <div className="flex items-center gap-8">
+              <div className="flex flex-col">
+                <span className="text-[8px] font-black text-white/30 uppercase tracking-widest">Total Equity</span>
+                <span className="text-sm font-mono font-black text-cyan-400">${netWorth.toFixed(2)}</span>
               </div>
-              <div className="h-8 w-px bg-white/10"></div>
-              <div>
-                <p className="text-[10px] text-white/30 uppercase tracking-[0.2em] font-black">Liquid Cash</p>
-                <p className="text-2xl font-black text-white/80">${user?.cashBalance.toLocaleString() || '0.00'}</p>
+              <div className="flex flex-col">
+                <span className="text-[8px] font-black text-white/30 uppercase tracking-widest">Available Cash</span>
+                <span className="text-sm font-mono font-black text-white/80">${user?.cashBalance.toFixed(2)}</span>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-[8px] font-black text-white/30 uppercase tracking-widest">Position PnL</span>
+                <span className={`text-sm font-mono font-black ${unrealizedPnL >= 0 ? 'text-cyan-400' : 'text-magenta-400'}`}>
+                  {unrealizedPnL >= 0 ? '+' : ''}{unrealizedPnL.toFixed(2)}
+                </span>
               </div>
             </div>
-            <div className="flex gap-4">
-              <div className="flex flex-col items-end mr-4">
-                <p className="text-[10px] text-white/30 uppercase font-black">Rank</p>
-                <p className="text-sm font-black text-cyan-400">#{leaderboard.find(l => l.username === user?.username)?.rank || '---'}</p>
+
+            <div className="flex items-center gap-4">
+              <div className="flex flex-col items-end">
+                <span className="text-[8px] font-black text-white/30 uppercase">Ranking</span>
+                <span className="text-xs font-black text-cyan-400">#{leaderboard.find(l => l.username === user?.username)?.rank || '---'}</span>
               </div>
+              <div className="w-px h-6 bg-white/5 mx-2"></div>
               <button 
                 onClick={() => claimStimulus()}
-                className="px-6 py-2 glass-panel border-cyan-500/30 hover:bg-cyan-500/10 transition-all text-[10px] font-black tracking-widest uppercase"
+                className="px-4 py-1.5 rounded bg-cyan-500/10 border border-cyan-500/30 text-[9px] font-black text-cyan-400 uppercase tracking-widest hover:bg-cyan-500/20 transition-all"
               >
                 Claim Stimulus
               </button>
             </div>
-          </section>
+          </header>
 
-          {/* View Content */}
-          {renderView()}
+          {/* Main Viewport */}
+          <div className="flex-1 flex overflow-hidden">
+            {renderView()}
+          </div>
         </main>
       </div>
     </div>
