@@ -30,41 +30,40 @@ const TradingView: React.FC = () => {
       {/* Center: Chart & Management */}
       <main className="flex-1 flex flex-col min-w-0 bg-[#0a0a0f]/50">
         {/* Asset Header Info */}
-        <div className="h-16 terminal-border-b flex items-center px-6 gap-8 bg-black/20">
+        <div className="h-14 terminal-border-b flex items-center px-4 gap-6 bg-black/40">
           <div className="flex items-center gap-3">
-            <h2 className="text-lg font-black tracking-tighter italic">{activeAsset?.ticker}USDT</h2>
-            <span className={`text-sm font-mono font-bold ${prices[activeAsset?.ticker] > activeAsset?.price ? 'text-cyan-400' : 'text-magenta-400'}`}>
+            <h2 className="text-base font-black tracking-tight">{activeAsset?.ticker}USDT</h2>
+            <span className={`text-sm font-mono font-bold ${prices[activeAsset?.ticker] > activeAsset?.price ? 'text-bull' : 'text-bear'}`}>
               ${prices[activeAsset?.ticker]?.toFixed(prices[activeAsset?.ticker] < 1 ? 4 : 2)}
             </span>
           </div>
           
-          <div className="h-8 w-px bg-white/5"></div>
+          <div className="h-6 w-px bg-white/10"></div>
 
           <div className="flex gap-6">
             <div className="flex flex-col">
-              <span className="text-[9px] font-bold text-white/30 uppercase tracking-tighter">Market Cap</span>
+              <span className="text-[9px] font-bold text-white/30 uppercase">MCAP</span>
               <span className="text-[11px] font-mono font-bold">${formatLargeNumber(marketCaps[activeAsset?.ticker] || 0)}</span>
-            </div>
-            <div className="flex flex-col">
-              <span className="text-[9px] font-bold text-white/30 uppercase tracking-tighter">24h Low</span>
-              <span className="text-[11px] font-mono font-bold text-white/70">${(activeAsset?.price * 0.95).toFixed(2)}</span>
-            </div>
-            <div className="flex flex-col">
-              <span className="text-[9px] font-bold text-white/30 uppercase tracking-tighter">24h High</span>
-              <span className="text-[11px] font-mono font-bold text-white/70">${(activeAsset?.price * 1.05).toFixed(2)}</span>
             </div>
           </div>
 
-          <div className="ml-auto flex gap-1">
-            {timeframes.map(tf => (
-              <button
-                key={tf}
-                onClick={() => setActiveTimeframe(tf)}
-                className={`text-[10px] px-2 py-1 rounded transition-all font-black ${activeTimeframe === tf ? 'bg-white/10 text-cyan-400' : 'text-white/30 hover:text-white/50'}`}
-              >
-                {tf.toUpperCase()}
-              </button>
-            ))}
+          {/* Timeframe Dropdown */}
+          <div className="ml-auto relative group">
+            <button className="px-3 py-1.5 glass-panel rounded bg-white/5 border-white/10 text-[10px] font-black text-white/70 flex items-center gap-2 hover:bg-white/10 transition-all">
+              {activeTimeframe.toUpperCase()}
+              <span className="text-[8px] opacity-50">▼</span>
+            </button>
+            <div className="absolute right-0 top-full mt-1 w-24 glass-panel bg-[#1e2329] border-white/10 rounded shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
+              {timeframes.map(tf => (
+                <div
+                  key={tf}
+                  onClick={() => setActiveTimeframe(tf)}
+                  className={`px-4 py-2 text-[10px] font-bold cursor-pointer hover:bg-white/5 transition-colors ${activeTimeframe === tf ? 'text-cyan-400 bg-white/5' : 'text-white/50'}`}
+                >
+                  {tf.toUpperCase()}
+                </div>
+              ))}
+            </div>
           </div>
         </div>
 

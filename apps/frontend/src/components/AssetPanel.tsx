@@ -27,18 +27,18 @@ const AssetPanel: React.FC = () => {
             <div 
               key={asset.id}
               onClick={() => setActiveAsset(asset)}
-              className={`p-4 cursor-pointer transition-all border-l-2 ${activeAsset?.id === asset.id ? 'bg-white/5 border-cyan-400' : 'border-transparent hover:bg-white/[0.03]'}`}
+              className={`px-4 py-3 cursor-pointer transition-all border-l-2 ${activeAsset?.id === asset.id ? 'bg-white/5 border-bull' : 'border-transparent hover:bg-white/[0.03]'}`}
             >
-              <div className="flex justify-between items-start mb-1">
-                <span className="text-xs font-black tracking-tight">{asset.ticker}</span>
-                <span className={`text-[10px] font-mono font-bold ${isUp ? 'text-cyan-400' : 'text-magenta-400'}`}>
+              <div className="flex justify-between items-center mb-1">
+                <span className="text-[11px] font-black tracking-tight">{asset.ticker}</span>
+                <span className={`text-[11px] font-mono font-bold ${isUp ? 'text-bull' : 'text-bear'}`}>
                   ${prices[asset.ticker]?.toFixed(prices[asset.ticker] < 1 ? 4 : 2)}
                 </span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-[9px] font-bold text-white/20 uppercase tracking-tighter">MCAP: ${formatLargeNumber(currentMCap)}</span>
-                <span className={`text-[8px] font-black px-1.5 py-0.5 rounded ${isUp ? 'bg-cyan-500/10 text-cyan-400' : 'bg-magenta-500/10 text-magenta-400'}`}>
-                  {isUp ? '▲' : '▼'} {((Math.abs(currentMCap - initialMCap) / initialMCap) * 100).toFixed(1)}%
+                <span className="text-[8px] font-bold text-white/20 uppercase tracking-tighter">MCAP: ${formatLargeNumber(currentMCap)}</span>
+                <span className={`text-[8px] font-bold ${isUp ? 'text-bull' : 'text-bear'}`}>
+                  {isUp ? '+' : ''}{((Math.abs(currentMCap - initialMCap) / initialMCap) * 100).toFixed(1)}%
                 </span>
               </div>
             </div>

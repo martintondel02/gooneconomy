@@ -107,16 +107,16 @@ function App() {
           <header className="h-14 terminal-border-b flex items-center px-6 justify-between bg-black/40">
             <div className="flex items-center gap-8">
               <div className="flex flex-col">
-                <span className="text-[8px] font-black text-white/30 uppercase tracking-widest">Total Equity</span>
-                <span className="text-sm font-mono font-black text-cyan-400">${netWorth.toFixed(2)}</span>
+                <span className="text-[8px] font-black text-white/20 uppercase tracking-widest">Equity</span>
+                <span className="text-sm font-mono font-black text-bull">${netWorth.toFixed(2)}</span>
               </div>
               <div className="flex flex-col">
-                <span className="text-[8px] font-black text-white/30 uppercase tracking-widest">Available Cash</span>
-                <span className="text-sm font-mono font-black text-white/80">${user?.cashBalance.toFixed(2)}</span>
+                <span className="text-[8px] font-black text-white/20 uppercase tracking-widest">Available</span>
+                <span className="text-sm font-mono font-black text-white/70">${user?.cashBalance.toFixed(2)}</span>
               </div>
               <div className="flex flex-col">
-                <span className="text-[8px] font-black text-white/30 uppercase tracking-widest">Position PnL</span>
-                <span className={`text-sm font-mono font-black ${unrealizedPnL >= 0 ? 'text-cyan-400' : 'text-magenta-400'}`}>
+                <span className="text-[8px] font-black text-white/20 uppercase tracking-widest">PnL</span>
+                <span className={`text-sm font-mono font-black ${unrealizedPnL >= 0 ? 'text-bull' : 'text-bear'}`}>
                   {unrealizedPnL >= 0 ? '+' : ''}{unrealizedPnL.toFixed(2)}
                 </span>
               </div>
@@ -124,13 +124,13 @@ function App() {
 
             <div className="flex items-center gap-4">
               <div className="flex flex-col items-end">
-                <span className="text-[8px] font-black text-white/30 uppercase">Ranking</span>
-                <span className="text-xs font-black text-cyan-400">#{leaderboard.find(l => l.username === user?.username)?.rank || '---'}</span>
+                <span className="text-[8px] font-black text-white/20 uppercase">Global Rank</span>
+                <span className="text-xs font-black text-bull">#{leaderboard.find(l => l.username === user?.username)?.rank || '---'}</span>
               </div>
               <div className="w-px h-6 bg-white/5 mx-2"></div>
               <button 
                 onClick={() => claimStimulus()}
-                className="px-4 py-1.5 rounded bg-cyan-500/10 border border-cyan-500/30 text-[9px] font-black text-cyan-400 uppercase tracking-widest hover:bg-cyan-500/20 transition-all"
+                className="px-4 py-1.5 rounded bg-bull/10 border border-bull/30 text-[9px] font-black text-bull uppercase tracking-widest hover:bg-bull/20 transition-all"
               >
                 Claim Stimulus
               </button>

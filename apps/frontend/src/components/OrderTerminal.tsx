@@ -17,56 +17,53 @@ const OrderTerminal: React.FC = () => {
 
       <div className="flex-1 p-4 flex flex-col gap-6">
         {/* Buy/Sell Toggles */}
-        <div className="flex gap-1 p-1 bg-white/5 rounded-lg">
-          <button className="flex-1 py-2 text-xs font-black rounded-md bg-cyan-500/20 text-cyan-400 border border-cyan-500/30">OPEN</button>
-          <button className="flex-1 py-2 text-xs font-black rounded-md text-white/30 hover:bg-white/5">CLOSE</button>
+        <div className="flex gap-1 p-1 bg-black/40 rounded-lg border border-white/5">
+          <button className="flex-1 py-2 text-[10px] font-black rounded bg-[#2ebd85]/20 text-[#2ebd85] border border-[#2ebd85]/30">BUY</button>
+          <button className="flex-1 py-2 text-[10px] font-black rounded text-white/30 hover:bg-white/5">SELL</button>
         </div>
 
         {/* Leverage Slider */}
         <div className="flex flex-col gap-3">
           <div className="flex justify-between items-center">
-            <span className="text-[10px] font-bold text-white/30 uppercase">Leverage</span>
-            <span className="text-xs font-mono text-cyan-400">{leverage}x</span>
+            <span className="text-[10px] font-bold text-white/20 uppercase tracking-widest">Leverage</span>
+            <span className="text-[10px] font-mono text-bull">{leverage}x</span>
           </div>
           <input 
             type="range" min="1" max="25" step="1" 
             value={leverage} 
             onChange={(e) => setLeverage(parseInt(e.target.value))}
-            className="w-full accent-cyan-400"
+            className="w-full h-1 bg-white/10 rounded-lg appearance-none cursor-pointer accent-bull"
           />
-          <div className="flex justify-between text-[8px] font-mono text-white/20">
-            <span>1x</span><span>5x</span><span>10x</span><span>15x</span><span>20x</span><span>25x</span>
-          </div>
         </div>
 
         {/* Margin Input */}
-        <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-2">
           <div className="flex justify-between items-center">
-            <span className="text-[10px] font-bold text-white/30 uppercase">Order Margin</span>
-            <span className="text-[10px] font-mono text-white/50">AVBL: ${user?.cashBalance.toFixed(2)}</span>
+            <span className="text-[10px] font-bold text-white/20 uppercase tracking-widest">Margin</span>
+            <span className="text-[9px] font-mono text-white/40">Avbl: ${user?.cashBalance.toFixed(2)}</span>
           </div>
           <div className="relative">
             <input 
               type="number" 
               value={margin}
               onChange={(e) => setMargin(parseFloat(e.target.value))}
-              className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-sm font-mono focus:outline-none focus:border-cyan-500/50"
+              className="w-full bg-black/40 border border-white/10 rounded p-3 text-xs font-mono text-white focus:outline-none focus:border-bull/50"
             />
-            <span className="absolute right-3 top-3 text-[10px] font-bold text-white/20 uppercase">USD</span>
+            <span className="absolute right-3 top-3 text-[9px] font-bold text-white/20 uppercase">USDT</span>
           </div>
         </div>
 
         {/* Action Buttons */}
-        <div className="flex flex-col gap-2 mt-auto">
+        <div className="flex flex-col gap-3 mt-auto">
           <button 
             onClick={() => openPosition('LONG', margin, leverage)}
-            className="w-full py-4 rounded-xl bg-cyan-500 text-black font-black text-sm tracking-widest hover:brightness-110 active:scale-[0.98] transition-all shadow-[0_0_20px_rgba(0,243,255,0.2)]"
+            className="w-full py-3.5 rounded bg-[#2ebd85] text-[#0b0e11] font-black text-xs tracking-widest hover:bg-[#32d993] transition-all shadow-[0_4px_15px_rgba(46,189,133,0.2)]"
           >
             BUY / LONG
           </button>
           <button 
             onClick={() => openPosition('SHORT', margin, leverage)}
-            className="w-full py-4 rounded-xl bg-magenta-500 text-white font-black text-sm tracking-widest hover:brightness-110 active:scale-[0.98] transition-all shadow-[0_0_20px_rgba(255,0,255,0.2)]"
+            className="w-full py-3.5 rounded bg-[#f6465d] text-white font-black text-xs tracking-widest hover:bg-[#ff5c6d] transition-all shadow-[0_4px_15px_rgba(246,70,93,0.2)]"
           >
             SELL / SHORT
           </button>
