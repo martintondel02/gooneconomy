@@ -6,14 +6,17 @@ import Chart from './components/Chart';
 function App() {
   const { 
     prices, 
+    marketCaps,
     assets, 
     positions, 
     leaderboard,
     user,
     activeAsset, 
+    activeTimeframe,
     connect, 
     disconnect, 
     setActiveAsset, 
+    setActiveTimeframe,
     openPosition, 
     closePosition,
     claimStimulus
@@ -25,6 +28,14 @@ function App() {
   }, [connect, disconnect]);
 
   const tickers = ['GOON', 'BTC', 'ETH', 'NVDA', 'PUMPKIN', 'MOSSAD', 'AAPL', 'TSLA', 'GOLD'];
+  const timeframes = ['1s', '5s', '15s', '1m', '5m', '15m', '1h', '3h', '12h', '24h'];
+
+  const formatLargeNumber = (num: number) => {
+    if (num >= 1e9) return (num / 1e9).toFixed(2) + 'B';
+    if (num >= 1e6) return (num / 1e6).toFixed(2) + 'M';
+    if (num >= 1e3) return (num / 1e3).toFixed(2) + 'K';
+    return num.toFixed(2);
+  };
 
   // Calculate stats
   const unrealizedPnL = positions.reduce((acc, p) => acc + (p.pnl || 0), 0);
@@ -110,9 +121,12 @@ function App() {
                   onClick={() => setActiveAsset(asset)}
                   className={`px-4 py-2 glass-panel flex-shrink-0 flex flex-col justify-center min-w-[120px] transition-all ${activeAsset?.id === asset.id ? 'bg-white/10 border-cyan-500/50' : 'hover:bg-white/5'}`}
                 >
-                  <span className="text-[10px] text-white/50 font-bold">{asset.ticker}</span>
-                  <span className={`text-sm font-mono ${prices[asset.ticker] > asset.price ? 'text-cyan-400' : 'text-magenta-400'}`}>
-                    ${prices[asset.ticker]?.toFixed(prices[asset.ticker] < 1 ? 4 : 2) || '---'}
+                  <div className="flex justify-between items-center w-full">
+                    <span className="text-[10px] text-white/50 font-bold">{asset.ticker}</span>
+                    <span className="text-[8px] text-white/30 uppercase font-mono">MCAP</span>
+                  </div>
+                  <span className={`text-sm font-mono ${marketCaps[asset.ticker] > (asset.price * asset.supply) ? 'text-cyan-400' : 'text-magenta-400'}`}>
+                    ${formatLargeNumber(marketCaps[asset.ticker] || 0)}
                   </span>
                 </button>
               ))}
@@ -122,14 +136,25 @@ function App() {
               <div className="flex justify-between items-center mb-4 z-10">
                 <div className="flex items-center gap-4">
                   <h2 className="text-xl font-black tracking-tighter italic">{activeAsset?.name || 'Loading...'}</h2>
-                  <span className="text-xs font-mono text-white/30">{activeAsset?.ticker} / USD</span>
+                  <div className="flex flex-col">
+                    <span className="text-xs font-mono text-white/30">MCAP CHART / {activeTimeframe?.toUpperCase()}</span>
+                    <span className="text-[10px] text-cyan-400 font-mono">PRICE: ${prices[activeAsset?.ticker]?.toFixed(2) || '---'}</span>
+                  </div>
                 </div>
-                <div className="flex gap-2">
-                  <span className="text-[10px] px-3 py-1 glass-panel bg-white/10 border-cyan-500/20 text-cyan-400 font-bold">LIVE FEED</span>
+                <div className="flex gap-1 overflow-x-auto pb-1 max-w-[400px]">
+                  {timeframes.map(tf => (
+                    <button
+                      key={tf}
+                      onClick={() => setActiveTimeframe(tf)}
+                      className={`text-[9px] px-2 py-1 glass-panel transition-all font-black ${activeTimeframe === tf ? 'bg-cyan-500/20 text-cyan-400 border-cyan-500/50' : 'hover:bg-white/5 text-white/30'}`}
+                    >
+                      {tf.toUpperCase()}
+                    </button>
+                  ))}
                 </div>
               </div>
               <div className="flex-1 rounded-lg overflow-hidden">
-                {activeAsset && <Chart key={activeAsset.id} assetId={activeAsset.id} ticker={activeAsset.ticker} />}
+                {activeAsset && <Chart key={`${activeAsset.id}-${activeTimeframe}`} assetId={activeAsset.id} ticker={activeAsset.ticker} />}
               </div>
             </div>
           </section>

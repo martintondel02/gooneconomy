@@ -10,23 +10,28 @@ interface ChartProps {
 const Chart: React.FC<ChartProps> = ({ assetId, ticker }) => {
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const candleSeriesRef = useRef<ISeriesApi<'Candlestick'>>(null);
-  const { prices } = useMarketStore();
+  const { marketCaps, activeTimeframe } = useMarketStore();
 
   // Price update effect
   useEffect(() => {
-    if (!candleSeriesRef.current || !prices[ticker]) return;
+    if (!candleSeriesRef.current || !marketCaps[ticker]) return;
 
-    const price = prices[ticker];
-    const now = Math.floor(Date.now() / 60000) * 60;
+    const marketCap = marketCaps[ticker];
+    const durationMap: Record<string, number> = {
+      '1s': 1, '5s': 5, '15s': 15, '1m': 60, '5m': 300, '15m': 900,
+      '1h': 3600, '3h': 10800, '12h': 43200, '24h': 86400,
+    };
+    const duration = durationMap[activeTimeframe] || 60;
+    const now = Math.floor(Date.now() / 1000 / duration) * duration;
 
     candleSeriesRef.current.update({
       time: now as any,
-      open: price, // This is a simplification, in a real app we'd track the candle's open
-      high: price,
-      low: price,
-      close: price,
+      open: marketCap, 
+      high: marketCap,
+      low: marketCap,
+      close: marketCap,
     });
-  }, [prices, ticker]);
+  }, [marketCaps, ticker, activeTimeframe]);
 
   useEffect(() => {
     if (!chartContainerRef.current) return;
@@ -44,7 +49,15 @@ const Chart: React.FC<ChartProps> = ({ assetId, ticker }) => {
       height: 400,
       timeScale: {
         timeVisible: true,
-        secondsVisible: false,
+        secondsVisible: true,
+      },
+      localization: {
+        priceFormatter: (price: number) => {
+          if (price >= 1e9) return (price / 1e9).toFixed(2) + 'B';
+          if (price >= 1e6) return (price / 1e6).toFixed(2) + 'M';
+          if (price >= 1e3) return (price / 1e3).toFixed(2) + 'K';
+          return price.toFixed(2);
+        },
       },
     });
 
@@ -61,7 +74,7 @@ const Chart: React.FC<ChartProps> = ({ assetId, ticker }) => {
 
     // Fetch initial candles
     const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:28081';
-    fetch(`${apiUrl}/candles/${assetId}`)
+    fetch(`${apiUrl}/candles/${assetId}?tf=${activeTimeframe}`)
       .then(res => res.json())
       .then(data => {
         if (data.length > 0) {
@@ -79,7 +92,7 @@ const Chart: React.FC<ChartProps> = ({ assetId, ticker }) => {
       window.removeEventListener('resize', handleResize);
       chart.remove();
     };
-  }, [assetId]);
+  }, [assetId, activeTimeframe]);
 
   return <div ref={chartContainerRef} className="w-full h-full" />;
 };

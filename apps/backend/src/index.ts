@@ -29,17 +29,17 @@ const posManager = new PositionManager(engine);
 const leaderboard = new LeaderboardManager(posManager);
 
 const initialAssets = [
-  { id: '1', ticker: 'GOON', name: 'GoonCoin', type: 'CRYPTO', price: 142.32 },
-  { id: '2', ticker: 'BTC', name: 'Bitcoin', type: 'CRYPTO', price: 64231.50 },
-  { id: '3', ticker: 'ETH', name: 'Ethereum', type: 'CRYPTO', price: 3451.20 },
-  { id: '4', ticker: 'PUMPKIN', name: 'PumpkinCoin', type: 'CRYPTO', price: 0.042 },
-  { id: '5', ticker: 'MOSSAD', name: 'MossadCoin', type: 'CRYPTO', price: 1.00 },
-  { id: '6', ticker: 'NVDA', name: 'Nvidia', type: 'STOCK', price: 892.12 },
-  { id: '7', ticker: 'ORCL', name: 'Oracle', type: 'STOCK', price: 125.40 },
-  { id: '8', ticker: 'AAPL', name: 'Apple', type: 'STOCK', price: 172.10 },
-  { id: '9', ticker: 'TSLA', name: 'Tesla', type: 'STOCK', price: 165.30 },
-  { id: '10', ticker: 'PLTR', name: 'Palantir', type: 'STOCK', price: 24.15 },
-  { id: '11', ticker: 'GOLD', name: 'Gold', type: 'COMMODITY', price: 2145.00 },
+  { id: '1', ticker: 'GOON', name: 'GoonCoin', type: 'CRYPTO', price: 142.32, supply: 1000000 },
+  { id: '2', ticker: 'BTC', name: 'Bitcoin', type: 'CRYPTO', price: 64231.50, supply: 21000000 },
+  { id: '3', ticker: 'ETH', name: 'Ethereum', type: 'CRYPTO', price: 3451.20, supply: 120000000 },
+  { id: '4', ticker: 'PUMPKIN', name: 'PumpkinCoin', type: 'CRYPTO', price: 0.042, supply: 1000000000 },
+  { id: '5', ticker: 'MOSSAD', name: 'MossadCoin', type: 'CRYPTO', price: 1.00, supply: 10000000 },
+  { id: '6', ticker: 'NVDA', name: 'Nvidia', type: 'STOCK', price: 892.12, supply: 2500000000 },
+  { id: '7', ticker: 'ORCL', name: 'Oracle', type: 'STOCK', price: 125.40, supply: 2700000000 },
+  { id: '8', ticker: 'AAPL', name: 'Apple', type: 'STOCK', price: 172.10, supply: 15000000000 },
+  { id: '9', ticker: 'TSLA', name: 'Tesla', type: 'STOCK', price: 165.30, supply: 3000000000 },
+  { id: '10', ticker: 'PLTR', name: 'Palantir', type: 'STOCK', price: 24.15, supply: 2200000000 },
+  { id: '11', ticker: 'GOLD', name: 'Gold', type: 'COMMODITY', price: 2145.00, supply: 100000000 },
 ];
 
 initialAssets.forEach(asset => {
@@ -52,7 +52,7 @@ const assetConfigs = initialAssets.map(a => ({
 }));
 
 const shadowMarketMaker = new ShadowMarketMaker(engine, assetConfigs);
-shadowMarketMaker.start();
+// shadowMarketMaker.start(); // Will be triggered manually in the 1Hz loop
 
 app.use(cors());
 app.use(express.json());
@@ -71,7 +71,8 @@ app.get('/assets', (req, res) => {
 
 app.get('/candles/:assetId', (req, res) => {
   const { assetId } = req.params;
-  const candles = candleStore.getCandles(assetId);
+  const tf = (req.query.tf as any) || '1m';
+  const candles = candleStore.getCandles(assetId, tf);
   res.json(candles);
 });
 
@@ -110,12 +111,22 @@ app.post('/user/claim-stimulus', (req, res) => {
 
 // Real-time price and candle update loop
 setInterval(() => {
-  const currentPrices = initialAssets.reduce((acc, asset) => {
+  // 1. Tick the Market Maker (1Hz high-frequency volatility)
+  shadowMarketMaker.tick();
+
+  const currentPrices: Record<string, number> = {};
+  const currentMarketCaps: Record<string, number> = {};
+
+  initialAssets.forEach(asset => {
     const currentPrice = engine.getCurrentPrice(asset.id);
-    acc[asset.ticker] = currentPrice;
-    candleStore.update(asset.id, currentPrice);
-    return acc;
-  }, {} as Record<string, number>);
+    const marketCap = currentPrice * (asset as any).supply;
+    
+    currentPrices[asset.ticker] = currentPrice;
+    currentMarketCaps[asset.ticker] = marketCap;
+
+    // 2. Update Multi-Timeframe Candle Store with Market Cap
+    candleStore.update(asset.id, marketCap);
+  });
   
   // Check liquidations
   const liquidations = posManager.checkLiquidations();
@@ -138,6 +149,7 @@ setInterval(() => {
   const currentUser = leaderboard.getUser('dev-user');
 
   io.emit('market:prices', currentPrices);
+  io.emit('market:caps', currentMarketCaps);
   io.emit('user:positions', activePositions);
   io.emit('market:leaderboard', lbData);
   io.emit('user:data', currentUser);

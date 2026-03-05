@@ -3,15 +3,18 @@ import { io, Socket } from 'socket.io-client';
 
 interface MarketState {
   prices: Record<string, number>;
+  marketCaps: Record<string, number>;
   assets: any[];
   positions: any[];
   leaderboard: any[];
   user: any | null;
   activeAsset: any | null;
+  activeTimeframe: string;
   socket: Socket | null;
   connect: () => void;
   disconnect: () => void;
   setActiveAsset: (asset: any) => void;
+  setActiveTimeframe: (tf: string) => void;
   openPosition: (side: 'LONG' | 'SHORT', margin: number, leverage: number) => Promise<void>;
   closePosition: (positionId: string) => Promise<void>;
   claimStimulus: () => Promise<void>;
@@ -19,11 +22,13 @@ interface MarketState {
 
 export const useMarketStore = create<MarketState>((set, get) => ({
   prices: {},
+  marketCaps: {},
   assets: [],
   positions: [],
   leaderboard: [],
   user: null,
   activeAsset: null,
+  activeTimeframe: '1m',
   socket: null,
 
   connect: () => {
@@ -34,6 +39,10 @@ export const useMarketStore = create<MarketState>((set, get) => ({
     
     socket.on('market:prices', (prices: Record<string, number>) => {
       set({ prices });
+    });
+
+    socket.on('market:caps', (marketCaps: Record<string, number>) => {
+      set({ marketCaps });
     });
 
     socket.on('user:positions', (positions: any[]) => {
@@ -68,6 +77,8 @@ export const useMarketStore = create<MarketState>((set, get) => ({
 
   setActiveAsset: (asset: any) => set({ activeAsset: asset }),
 
+  setActiveTimeframe: (tf: string) => set({ activeTimeframe: tf }),
+
   openPosition: async (side, margin, leverage) => {
     const { activeAsset } = get();
     if (!activeAsset) return;
@@ -77,7 +88,7 @@ export const useMarketStore = create<MarketState>((set, get) => ({
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        userId: 'dev-user', // Hardcoded for now
+        userId: 'dev-user', 
         assetId: activeAsset.id,
         side,
         margin,

@@ -15,18 +15,18 @@ export class ShadowMarketMaker {
     this.assets = assets;
   }
 
+  public tick() {
+    this.assets.forEach(asset => {
+      const direction = Math.random() > 0.5 ? 'UP' : 'DOWN';
+      const baseVol = (Math.random() * 0.0009) + 0.0001; 
+      const magnitude = baseVol * asset.volatility;
+      this.engine.injectVolatility(asset.id, direction, magnitude);
+    });
+  }
+
   public start() {
-    // Every 5 seconds, inject some noise
-    this.interval = setInterval(() => {
-      this.assets.forEach(asset => {
-        const direction = Math.random() > 0.5 ? 'UP' : 'DOWN';
-        // Base volatility modified by asset specific multiplier
-        const baseVol = (Math.random() * 0.0009) + 0.0001; 
-        const magnitude = baseVol * asset.volatility;
-        
-        this.engine.injectVolatility(asset.id, direction, magnitude);
-      });
-    }, 5000);
+    // Legacy support, but we'll use tick() directly
+    this.interval = setInterval(() => this.tick(), 5000);
   }
 
   public stop() {
