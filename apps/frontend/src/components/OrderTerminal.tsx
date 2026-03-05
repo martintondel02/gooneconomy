@@ -23,13 +23,13 @@ const OrderTerminal: React.FC = () => {
         <div className="flex gap-1 p-1 bg-black/40 rounded-lg border border-white/5">
           <button 
             onClick={() => setSide('LONG')}
-            className={`flex-1 py-2.5 text-[11px] font-black rounded-md transition-all uppercase tracking-widest ${side === 'LONG' ? 'bg-bull/20 text-bull border border-bull/30' : 'text-white/20 hover:text-white/40'}`}
+            className={`flex-1 py-2.5 text-[11px] font-black rounded-md transition-all uppercase tracking-widest ${side === 'LONG' ? 'bg-bull/20 text-bull border border-bull/30' : 'bg-[#2b2f36] text-white/30 hover:bg-[#363a45]'}`}
           >
             Buy
           </button>
           <button 
             onClick={() => setSide('SHORT')}
-            className={`flex-1 py-2.5 text-[11px] font-black rounded-md transition-all uppercase tracking-widest ${side === 'SHORT' ? 'bg-bear/20 text-bear border border-bear/30' : 'text-white/20 hover:text-white/40'}`}
+            className={`flex-1 py-2.5 text-[11px] font-black rounded-md transition-all uppercase tracking-widest ${side === 'SHORT' ? 'bg-bear/20 text-bear border border-bear/30' : 'bg-[#2b2f36] text-white/30 hover:bg-[#363a45]'}`}
           >
             Sell
           </button>
@@ -54,7 +54,7 @@ const OrderTerminal: React.FC = () => {
               <button 
                 key={l}
                 onClick={() => setLeverage(l)}
-                className={`flex-1 py-1 text-[9px] font-black rounded border transition-all ${leverage === l ? 'bg-white/10 border-white/20 text-white' : 'bg-transparent border-white/5 text-white/20 hover:text-white/40'}`}
+                className={`flex-1 py-1 text-[9px] font-black rounded border transition-all ${leverage === l ? 'bg-bull/20 border-bull/30 text-bull' : 'bg-[#2b2f36] border-white/5 text-white/30 hover:bg-[#363a45]'}`}
               >
                 {l}x
               </button>
