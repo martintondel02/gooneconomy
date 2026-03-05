@@ -55,6 +55,13 @@ const Chart: React.FC<ChartProps> = ({ assetId, ticker }) => {
       },
       rightPriceScale: {
         borderColor: 'rgba(255, 255, 255, 0.05)',
+        scaleMargins: {
+          top: 0.1,
+          bottom: 0.1,
+        },
+        autoScale: true,
+        // Reduce label density
+        ticksVisible: true,
       },
       localization: {
         priceFormatter: (price: number) => {
@@ -68,10 +75,10 @@ const Chart: React.FC<ChartProps> = ({ assetId, ticker }) => {
 
     const candleSeries = chart.addCandlestickSeries({
       upColor: '#2ebd85',
-      downColor: '#ff4d6d',
+      downColor: '#ff3b5c',
       borderVisible: false,
       wickUpColor: '#2ebd85',
-      wickDownColor: '#ff4d6d',
+      wickDownColor: '#ff3b5c',
     });
 
     // @ts-ignore
@@ -106,7 +113,7 @@ const Chart: React.FC<ChartProps> = ({ assetId, ticker }) => {
   return (
     <div className="w-full h-full relative">
       {loading && (
-        <div className="absolute inset-0 z-20 flex flex-col gap-4 p-8 bg-black/40">
+        <div className="absolute inset-0 z-20 flex flex-col gap-4 p-8 bg-black/40 backdrop-blur-sm">
           <div className="flex-1 skeleton opacity-20"></div>
           <div className="h-24 skeleton opacity-10"></div>
         </div>
