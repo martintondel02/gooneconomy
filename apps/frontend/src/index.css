@@ -211,3 +211,12 @@ body {
 .opacity-10 { opacity: 0.1; }
 .h-24 { height: 6rem; }
 .accent-bull { accent-color: var(--bull-green); }
+
+/* Solid Terminal Colors */
+.bg-terminal-dark { background-color: #0b0e11; }
+.bg-terminal-main { background-color: #1e2329; }
+.bg-terminal-light { background-color: #2b2f36; }
+.bg-terminal-hover { background-color: #363a45; }
+
+.border-terminal { border-color: #363a45; }
+.shadow-terminal { box-shadow: 0 8px 16px rgba(0, 0, 0, 0.5); }

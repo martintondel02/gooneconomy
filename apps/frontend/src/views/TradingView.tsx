@@ -42,11 +42,11 @@ const TradingView: React.FC = () => {
       <AssetPanel />
 
       {/* Center: Chart & Management */}
-      <main className="flex-1 flex flex-col min-w-0 bg-[#0a0a0f]/50 relative">
+      <main className="flex-1 flex flex-col min-w-0 bg-terminal-dark relative">
         {/* Asset Header Info */}
         <div className="h-14 terminal-border-b flex items-center px-4 gap-6 bg-[#14151a] relative z-40">
           <div className="flex items-center gap-3">
-            <h2 className="text-base font-black tracking-tight">{activeAsset?.ticker}USDT</h2>
+            <h2 className="text-base font-black tracking-tight text-white">{activeAsset?.ticker}USDT</h2>
             <span className={`text-sm font-mono font-bold ${prices[activeAsset?.ticker] > activeAsset?.price ? 'text-bull' : 'text-bear'}`}>
               ${prices[activeAsset?.ticker]?.toFixed(prices[activeAsset?.ticker] < 1 ? 4 : 2)}
             </span>
@@ -69,7 +69,7 @@ const TradingView: React.FC = () => {
                 e.stopPropagation();
                 setIsTfOpen(!isTfOpen);
               }}
-              className={`px-3 py-1.5 rounded border border-white/10 text-[10px] font-black flex items-center gap-2 transition-all ${isTfOpen ? 'bg-[#2b2f36] text-bull border-bull/50' : 'bg-[#2b2f36] text-white/70 hover:bg-[#363a45]'}`}
+              className={`px-3 py-1.5 rounded border border-terminal text-[10px] font-black flex items-center gap-2 transition-all ${isTfOpen ? 'bg-terminal-light text-bull border-bull/50' : 'bg-terminal-main text-white/70 hover:bg-terminal-hover'}`}
             >
               {activeTimeframe.toUpperCase()}
               <span className={`text-[8px] transition-transform ${isTfOpen ? 'rotate-180 opacity-100' : 'opacity-40'}`}>▼</span>
@@ -77,8 +77,8 @@ const TradingView: React.FC = () => {
             
             {isTfOpen && (
               <div 
-                className="absolute right-0 top-full mt-1 w-24 bg-[#1e2329] border border-white/10 rounded shadow-2xl overflow-hidden shadow-black"
-                style={{ zIndex: 101, pointerEvents: 'auto' }}
+                className="absolute right-0 top-full mt-1 w-24 bg-terminal-main border border-terminal rounded shadow-terminal overflow-hidden"
+                style={{ zIndex: 101 }}
               >
                 <div className="py-1">
                   {timeframes.map(tf => (
@@ -87,11 +87,10 @@ const TradingView: React.FC = () => {
                       onMouseDown={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
-                        console.log('TF Selection:', tf);
                         setActiveTimeframe(tf);
                         setIsTfOpen(false);
                       }}
-                      className={`px-4 py-2 text-[10px] font-bold cursor-pointer transition-colors ${activeTimeframe === tf ? 'text-bull bg-white/10' : 'text-white/70 hover:bg-[#2b2f36] hover:text-white'}`}
+                      className={`px-4 py-2 text-[10px] font-bold cursor-pointer transition-colors ${activeTimeframe === tf ? 'text-bull bg-white/5' : 'text-white/50 hover:bg-terminal-hover hover:text-white'}`}
                     >
                       {tf.toUpperCase()}
                     </div>
