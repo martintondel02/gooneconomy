@@ -24,8 +24,8 @@ const TradingView: React.FC = () => {
         setIsTfOpen(false);
       }
     };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
   }, []);
 
   const timeframes = ['1s', '5s', '15s', '1m', '5m', '15m', '1h', '3h', '12h', '24h'];
@@ -44,7 +44,7 @@ const TradingView: React.FC = () => {
       {/* Center: Chart & Management */}
       <main className="flex-1 flex flex-col min-w-0 bg-[#0a0a0f]/50">
         {/* Asset Header Info */}
-        <div className="h-14 terminal-border-b flex items-center px-4 gap-6 bg-black/40">
+        <div className="h-14 terminal-border-b flex items-center px-4 gap-6 bg-black/40 relative z-30">
           <div className="flex items-center gap-3">
             <h2 className="text-base font-black tracking-tight">{activeAsset?.ticker}USDT</h2>
             <span className={`text-sm font-mono font-bold ${prices[activeAsset?.ticker] > activeAsset?.price ? 'text-bull' : 'text-bear'}`}>
@@ -64,7 +64,10 @@ const TradingView: React.FC = () => {
           {/* Timeframe Dropdown */}
           <div className="ml-auto relative" ref={tfRef}>
             <button 
-              onClick={() => setIsTfOpen(!isTfOpen)}
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsTfOpen(!isTfOpen);
+              }}
               className={`px-3 py-1.5 glass-panel rounded border-white/10 text-[10px] font-black flex items-center gap-2 transition-all ${isTfOpen ? 'bg-white/10 text-bull border-bull/30' : 'bg-white/5 text-white/70 hover:bg-white/10'}`}
             >
               {activeTimeframe.toUpperCase()}
@@ -79,6 +82,8 @@ const TradingView: React.FC = () => {
                       key={tf}
                       onMouseDown={(e) => {
                         e.preventDefault();
+                        e.stopPropagation();
+                        console.log('TF Item Clicked:', tf);
                         setActiveTimeframe(tf);
                         setIsTfOpen(false);
                       }}
@@ -87,7 +92,6 @@ const TradingView: React.FC = () => {
                       {tf.toUpperCase()}
                     </div>
                   ))}
-
                 </div>
               </div>
             )}
@@ -95,7 +99,7 @@ const TradingView: React.FC = () => {
         </div>
 
         {/* The Chart Area */}
-        <div className="flex-[2] relative terminal-border-b">
+        <div className="flex-[2] relative terminal-border-b z-10">
           {activeAsset && (
             <Chart 
               key={`${activeAsset.id}-${activeTimeframe}`} 
