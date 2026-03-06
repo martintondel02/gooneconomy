@@ -49,12 +49,11 @@ interface MarketState {
 }
 
 const getApiUrl = () => {
-  const protocol = window.location.protocol;
-  const host = window.location.hostname;
   if (import.meta.env.VITE_API_URL) {
     return import.meta.env.VITE_API_URL;
   }
-  return `${protocol}//${host}:28081`;
+  // Use relative paths to hit the Vite proxy
+  return '';
 };
 
 export const useMarketStore = create<MarketState>((set, get) => ({

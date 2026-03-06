@@ -7,5 +7,15 @@ export default defineConfig({
     port: 28080,
     host: '0.0.0.0',
     allowedHosts: ['economy.goonhub.no'],
+    proxy: {
+      '/socket.io': {
+        target: 'http://backend:28081',
+        ws: true,
+      },
+      '^/(auth|admin|assets|user|trade|candles|leaderboard|uploads)': {
+        target: 'http://backend:28081',
+        changeOrigin: true,
+      }
+    }
   },
 });
