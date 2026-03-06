@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { Wallet, ShoppingBag, Settings, TrendingUp, LogOut } from 'lucide-react';
+import { Wallet, ShoppingBag, Settings, TrendingUp, LogOut, BarChart3, Users } from 'lucide-react';
 import { useMarketStore } from './store/useMarketStore';
 import TradingView from './views/TradingView';
 import PortfolioView from './views/PortfolioView';
@@ -32,7 +32,6 @@ function App() {
 
   const tickers = ['GOON', 'BTC', 'ETH', 'NVDA', 'PUMPKIN', 'MOSSAD', 'AAPL', 'TSLA', 'GOLD'];
 
-  // Calculate stats
   const unrealizedPnL = positions.reduce((acc, p) => acc + (p.pnl || 0), 0);
   const netWorth = (user?.cashBalance || 0) + unrealizedPnL;
 
@@ -46,111 +45,100 @@ function App() {
   };
 
   return (
-    <div className="flex flex-col h-screen bg-[#0d1117] text-white overflow-hidden">
-      {/* Sleek Ticker Tape */}
-      <div className="h-7 border-b border-white/[0.04] flex items-center overflow-hidden bg-black/20">
+    <div className="flex flex-col h-screen bg-[#0D0E12] text-[#F0F2F5] overflow-hidden font-sans">
+      {/* Institutional Top Ticker */}
+      <div className="h-8 border-b border-white/[0.04] flex items-center overflow-hidden bg-white/[0.01] backdrop-blur-md">
         <div className="whitespace-nowrap animate-marquee px-4">
           {tickers.map(ticker => {
-            const isUp = prices[ticker] > 100;
+            const price = prices[ticker] || 0;
+            const isUp = price > 100; // Mock condition
             return (
-              <span key={ticker} className="mx-6 text-[10px] font-medium tracking-tight">
-                <span className="text-white/20 mr-2 uppercase">{ticker}</span>
-                <span className={`font-mono font-bold ${isUp ? 'text-bull' : 'text-bear'}`}>
-                  ${prices[ticker]?.toFixed(prices[ticker] < 1 ? 4 : 2) || '---'}
+              <span key={ticker} className="mx-8 flex items-center gap-2">
+                <span className="text-[10px] font-bold text-white/20 uppercase tracking-wider">{ticker}</span>
+                <span className={`text-[11px] font-mono font-bold ${isUp ? 'text-bull' : 'text-bear'}`}>
+                  ${price.toFixed(price < 1 ? 4 : 2)}
                 </span>
               </span>
             );
           })}
-          {tickers.map(ticker => (
-            <span key={`${ticker}-loop`} className="mx-6 text-[10px] font-medium tracking-tight">
-              <span className="text-white/20 mr-2 uppercase">{ticker}</span>
-              <span className="text-bull font-mono font-bold">
-                ${prices[ticker]?.toFixed(prices[ticker] < 1 ? 4 : 2) || '---'}
-              </span>
-            </span>
-          ))}
         </div>
       </div>
 
       <div className="flex flex-1 overflow-hidden">
-        {/* Pro Sidebar (Left Rail) */}
-        <aside className="w-14 terminal-border-r flex flex-col items-center py-5 gap-6 bg-[#0d1117]">
-          <div className="mb-4">
-            <div className="w-8 h-8 rounded-md bg-bull flex items-center justify-center font-black italic tracking-tighter text-[#0d1117] text-sm shadow-[0_0_15px_rgba(16,185,129,0.2)]">G</div>
-          </div>
-          
-          <div 
-            onClick={() => setActiveTab('TRADING')}
-            className={`p-2.5 cursor-pointer rounded-lg transition-all group relative ${activeTab === 'TRADING' ? 'bg-bull/5 text-bull' : 'text-white/20 hover:text-white/40'}`}
-          >
-            <TrendingUp size={18} />
-            {activeTab === 'TRADING' && <div className="absolute left-[-15px] top-1/4 w-[2px] h-1/2 bg-bull rounded-r-full shadow-[0_0_10px_rgba(16,185,129,0.5)]"></div>}
-          </div>
-          
-          <div 
-            onClick={() => setActiveTab('PORTFOLIO')}
-            className={`p-2.5 cursor-pointer rounded-lg transition-all group relative ${activeTab === 'PORTFOLIO' ? 'bg-bull/5 text-bull' : 'text-white/20 hover:text-white/40'}`}
-          >
-            <Wallet size={18} />
-            {activeTab === 'PORTFOLIO' && <div className="absolute left-[-15px] top-1/4 w-[2px] h-1/2 bg-bull rounded-r-full shadow-[0_0_10px_rgba(16,185,129,0.5)]"></div>}
-          </div>
-          
-          <div 
-            onClick={() => setActiveTab('SHOP')}
-            className={`p-2.5 cursor-pointer rounded-lg transition-all group relative ${activeTab === 'SHOP' ? 'bg-bull/5 text-bull' : 'text-white/20 hover:text-white/40'}`}
-          >
-            <ShoppingBag size={18} />
-            {activeTab === 'SHOP' && <div className="absolute left-[-15px] top-1/4 w-[2px] h-1/2 bg-bull rounded-r-full shadow-[0_0_10px_rgba(16,185,129,0.5)]"></div>}
-          </div>
-
-          <div className="mt-auto flex flex-col items-center gap-4 mb-2">
-            <span className="text-[7px] font-bold text-white/10 uppercase -rotate-90 origin-center whitespace-nowrap tracking-widest">v0.1.0</span>
-            
-            <div 
-              onClick={() => logout()}
-              className="p-2.5 cursor-pointer text-white/10 hover:text-bear transition-colors group relative"
-              title="Logout"
-            >
-              <LogOut size={18} />
+        {/* Sleek Rail Sidebar */}
+        <aside className="w-[60px] border-r border-white/[0.04] flex flex-col items-center py-6 gap-8 bg-[#0D0E12] z-50">
+          <div className="mb-2">
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#3E7BFA] to-[#00C087] flex items-center justify-center shadow-lg shadow-black/20 group cursor-pointer active:scale-95 transition-all">
+              <span className="font-black italic text-white text-lg">G</span>
             </div>
+          </div>
+          
+          <div className="flex flex-col gap-4">
+            <NavIcon 
+              active={activeTab === 'TRADING'} 
+              icon={<BarChart3 size={20} />} 
+              onClick={() => setActiveTab('TRADING')} 
+              label="Trade"
+            />
+            <NavIcon 
+              active={activeTab === 'PORTFOLIO'} 
+              icon={<Wallet size={20} />} 
+              onClick={() => setActiveTab('PORTFOLIO')} 
+              label="Assets"
+            />
+            <NavIcon 
+              active={activeTab === 'SHOP'} 
+              icon={<ShoppingBag size={20} />} 
+              onClick={() => setActiveTab('SHOP')} 
+              label="Shop"
+            />
+          </div>
 
-            <div className="p-2.5 cursor-pointer text-white/10 hover:text-white/30 transition-colors">
-              <Settings size={18} />
+          <div className="mt-auto flex flex-col items-center gap-6 pb-2">
+            <div className="group relative">
+              <div className="absolute left-full ml-4 px-2 py-1 bg-white/[0.05] rounded border border-white/[0.1] text-[8px] font-bold text-white/40 uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">Version 0.3.0</div>
+              <span className="text-[8px] font-bold text-white/10 uppercase -rotate-90 origin-center whitespace-nowrap tracking-[0.2em]">v0.3.0</span>
+            </div>
+            
+            <div className="flex flex-col gap-4 items-center">
+              <div 
+                onClick={() => logout()}
+                className="p-2 cursor-pointer text-white/20 hover:text-bear transition-all group active:scale-90"
+                title="Disconnect"
+              >
+                <LogOut size={20} />
+              </div>
+              <div className="p-2 cursor-pointer text-white/20 hover:text-white/60 transition-all active:scale-90">
+                <Settings size={20} />
+              </div>
             </div>
           </div>
         </aside>
 
         <main className="flex-1 flex flex-col overflow-hidden">
-          {/* Minimalist Pro Header */}
-          <header className="h-12 terminal-border-b flex items-center px-4 justify-between bg-[#0d1117]/80 backdrop-blur-md">
-            <div className="flex items-center gap-6">
-              <div className="flex flex-col">
-                <span className="pro-label">Total Equity / USD</span>
-                <span className="pro-value font-mono tracking-tight">${netWorth.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-              </div>
-              <div className="w-px h-5 bg-white/[0.04]"></div>
-              <div className="flex flex-col">
-                <span className="pro-label">Available Balance</span>
-                <span className="pro-value text-white/60 font-mono tracking-tight">${user?.cashBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-              </div>
-              <div className="w-px h-5 bg-white/[0.04]"></div>
-              <div className="flex flex-col">
-                <span className="pro-label">Unrealized PnL</span>
-                <span className={`pro-value font-mono tracking-tight ${unrealizedPnL >= 0 ? 'text-bull' : 'text-bear'}`}>
-                  {unrealizedPnL >= 0 ? '+' : ''}{unrealizedPnL.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                </span>
-              </div>
+          {/* Institutional Header */}
+          <header className="h-[52px] border-b border-white/[0.04] flex items-center px-6 justify-between bg-white/[0.01] backdrop-blur-xl z-40">
+            <div className="flex items-center gap-10">
+              <StatItem label="Total Equity" value={`$${netWorth.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} isPnL={false} />
+              <div className="w-px h-6 bg-white/[0.04]"></div>
+              <StatItem label="Available" value={`$${user?.cashBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} isPnL={false} />
+              <div className="w-px h-6 bg-white/[0.04]"></div>
+              <StatItem 
+                label="Unrealized PnL" 
+                value={`${unrealizedPnL >= 0 ? '+' : ''}${unrealizedPnL.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} 
+                isPnL={true} 
+                positive={unrealizedPnL >= 0} 
+              />
             </div>
 
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-6">
               <div className="flex flex-col items-end">
-                <span className="pro-label">Global Standing</span>
-                <span className="text-[10px] font-bold text-bull italic">#{leaderboard.find(l => l.username === user?.username)?.rank || '---'}</span>
+                <span className="pro-label !text-[8px] opacity-40">Node Standing</span>
+                <span className="text-[11px] font-bold text-bull tracking-tight">RANK #{leaderboard.find(l => l.username === user?.username)?.rank || '---'}</span>
               </div>
-              <div className="w-px h-5 bg-white/[0.04] mx-1"></div>
               <button 
                 onClick={() => claimStimulus()}
-                className="px-3 py-1.5 rounded-md bg-bull/5 border border-bull/10 text-[8px] font-bold text-bull uppercase tracking-widest hover:bg-bull/10 transition-all active:scale-95"
+                className="px-4 py-2 rounded-lg bg-bull/5 border border-bull/10 text-[10px] font-bold text-bull uppercase tracking-widest hover:bg-bull/10 transition-all active:scale-95 shadow-lg shadow-bull/5"
               >
                 Claim Stimulus
               </button>
@@ -166,5 +154,29 @@ function App() {
     </div>
   );
 }
+
+const NavIcon = ({ active, icon, onClick, label }: any) => (
+  <div className="group relative flex flex-col items-center">
+    <div 
+      onClick={onClick}
+      className={`p-3 cursor-pointer rounded-xl transition-all relative ${active ? 'bg-[#3E7BFA]/10 text-[#3E7BFA]' : 'text-white/20 hover:bg-white/[0.03] hover:text-white/40'}`}
+    >
+      {icon}
+      {active && <div className="absolute left-[-18px] top-1/4 w-[3px] h-1/2 bg-[#3E7BFA] rounded-r-full shadow-[0_0_15px_rgba(62,123,250,0.6)]"></div>}
+    </div>
+    <span className="absolute left-full ml-4 px-2 py-1 bg-[#1C1E26] border border-white/[0.05] rounded text-[9px] font-bold text-white/60 uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity z-[100] pointer-events-none">
+      {label}
+    </span>
+  </div>
+);
+
+const StatItem = ({ label, value, isPnL, positive }: any) => (
+  <div className="flex flex-col gap-0.5">
+    <span className="pro-label !text-[9px]">{label}</span>
+    <span className={`text-[13px] font-mono font-bold tracking-tight ${isPnL ? (positive ? 'text-bull' : 'text-bear') : 'text-white'}`}>
+      {value}
+    </span>
+  </div>
+);
 
 export default App;

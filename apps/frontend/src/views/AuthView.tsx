@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useMarketStore } from '../store/useMarketStore';
-import { Lock, User, ArrowRight } from 'lucide-react';
+import { Lock, User, ArrowRight, ShieldCheck } from 'lucide-react';
 
 const AuthView: React.FC = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -27,88 +27,87 @@ const AuthView: React.FC = () => {
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-[#0d1117] relative overflow-hidden">
-      {/* Sophisticated Background */}
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(16,185,129,0.05),transparent_50%)]"></div>
+    <div className="flex items-center justify-center min-h-screen bg-[#0D0E12] relative overflow-hidden font-sans">
+      {/* Dynamic Background Elements */}
+      <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-[#3E7BFA]/5 blur-[120px] rounded-full animate-pulse"></div>
+      <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-[#00C087]/5 blur-[120px] rounded-full animate-pulse" style={{ animationDelay: '2s' }}></div>
       
-      <div className="w-full max-w-[340px] p-8 rounded-xl border border-white/[0.08] bg-white/[0.02] backdrop-blur-3xl relative z-10 shadow-2xl">
+      <div className="w-full max-w-[380px] p-10 rounded-2xl border border-white/[0.06] bg-white/[0.01] backdrop-blur-[32px] relative z-10 shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
         <div className="flex flex-col items-center mb-10">
-          <div className="w-10 h-10 rounded-md bg-bull flex items-center justify-center font-black italic text-[#0d1117] mb-4 shadow-[0_0_20px_rgba(16,185,129,0.3)]">G</div>
-          <h1 className="text-lg font-black tracking-tight uppercase text-white">
-            GOON<span className="text-bull/80 font-medium">ECONOMY</span>
-          </h1>
-          <div className="flex items-center gap-2 mt-2">
-             <span className="pro-label !text-[8px] opacity-50 tracking-[0.2em]">Institutional Access Terminal</span>
+          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#3E7BFA] to-[#00C087] flex items-center justify-center mb-6 shadow-xl">
+            <ShieldCheck size={28} className="text-white" />
           </div>
+          <h1 className="text-2xl font-bold tracking-tight text-white mb-2">
+            Goon<span className="text-[#00C087] font-medium">Economy</span>
+          </h1>
+          <p className="text-[11px] font-medium text-white/30 uppercase tracking-[0.2em]">Institutional Grade Terminal</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="space-y-1.5">
-            <label className="pro-label px-1">Identity Identifier</label>
+          <div className="space-y-2">
+            <label className="pro-label px-1">Access Identity</label>
             <div className="relative group">
-              <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
-                <User size={13} className="text-white/20 group-focus-within:text-bull/60 transition-colors" />
+              <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
+                <User size={16} className="text-white/20 group-focus-within:text-[#00C087] transition-colors" />
               </div>
               <input 
                 type="text" 
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                className="w-full bg-white/[0.03] border border-white/[0.05] rounded-md py-2.5 pl-9 pr-4 text-[12px] text-white placeholder:text-white/10 focus:border-bull/30 transition-all outline-none"
-                placeholder="ID_SECURE_KEY"
+                className="w-full bg-white/[0.03] border border-white/[0.05] rounded-lg py-3.5 pl-11 pr-4 text-sm text-white placeholder:text-white/10 focus:border-[#00C087]/40 focus:bg-[#00C087]/5 transition-all outline-none"
+                placeholder="Unique Identifier"
                 required
               />
             </div>
           </div>
 
-          <div className="space-y-1.5">
-            <label className="pro-label px-1">Access Protocol</label>
+          <div className="space-y-2">
+            <label className="pro-label px-1">Security Key</label>
             <div className="relative group">
-              <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
-                <Lock size={13} className="text-white/20 group-focus-within:text-bull/60 transition-colors" />
+              <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
+                <Lock size={16} className="text-white/20 group-focus-within:text-[#00C087] transition-colors" />
               </div>
               <input 
                 type="password" 
                 value={password}
-                onChange={(e) => setUsername(e.target.value)}
-                className="w-full bg-white/[0.03] border border-white/[0.05] rounded-md py-2.5 pl-9 pr-4 text-[12px] text-white placeholder:text-white/10 focus:border-bull/30 transition-all outline-none"
-                placeholder="PASSPHRASE"
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full bg-white/[0.03] border border-white/[0.05] rounded-lg py-3.5 pl-11 pr-4 text-sm text-white placeholder:text-white/10 focus:border-[#00C087]/40 focus:bg-[#00C087]/5 transition-all outline-none"
+                placeholder="Passphrase"
                 required
               />
             </div>
           </div>
 
           {error && (
-            <div className="p-3 bg-bear/5 border border-bear/10 text-bear text-[9px] font-medium uppercase tracking-wider leading-relaxed rounded-md">
-              System Error: {error}
+            <div className="p-3 bg-bear/5 border border-bear/10 text-bear text-[10px] font-semibold uppercase tracking-wider rounded-lg text-center leading-relaxed">
+              Authentication Error: {error}
             </div>
           )}
 
           <button 
             type="submit"
             disabled={loading}
-            className="w-full bg-bull hover:bg-bull/90 disabled:opacity-50 text-[#0d1117] font-black py-3 rounded-md flex items-center justify-center gap-2 transition-all uppercase tracking-wider group text-[11px] shadow-lg shadow-bull/10"
+            className="w-full bg-[#00C087] hover:bg-[#00D996] disabled:opacity-50 text-[#0D0E12] font-bold py-4 rounded-lg flex items-center justify-center gap-2 transition-all uppercase tracking-widest text-[12px] shadow-lg shadow-[#00C087]/10 active:scale-[0.98]"
           >
-            {loading ? 'Processing...' : (isLogin ? 'Initialize Session' : 'Register Terminal')}
-            <ArrowRight size={14} className="group-hover:translate-x-0.5 transition-transform" />
+            {loading ? 'Initializing...' : (isLogin ? 'Connect Terminal' : 'Register Access')}
+            <ArrowRight size={18} className="group-hover:translate-x-0.5 transition-transform" />
           </button>
         </form>
 
         <div className="mt-10 flex flex-col items-center gap-4">
           <button 
             onClick={() => setIsLogin(!isLogin)}
-            className="pro-label hover:text-bull transition-colors cursor-pointer"
+            className="pro-label hover:text-white transition-colors cursor-pointer"
           >
-            {isLogin ? "Register New Access" : "Authenticate Existing"}
+            {isLogin ? "Request New Access Node" : "Authenticate Session"}
           </button>
           
-          <div className="text-[7px] text-white/5 font-bold uppercase tracking-[0.4em] mt-2">
-            Professional Terminal v0.1.0 // Auth Required
+          <div className="flex items-center gap-2 mt-2 opacity-20">
+            <div className="w-1 h-1 rounded-full bg-white animate-pulse"></div>
+            <span className="text-[8px] font-bold uppercase tracking-[0.4em]">Node Status: Active</span>
           </div>
         </div>
       </div>
-      
-      {/* Subtle Scan Line */}
-      <div className="absolute top-0 left-0 w-full h-[1px] bg-bull/10 shadow-[0_0_15px_rgba(16,185,129,0.2)] animate-scan z-50"></div>
     </div>
   );
 };

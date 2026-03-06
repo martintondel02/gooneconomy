@@ -1,100 +1,124 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useMarketStore } from '../store/useMarketStore';
+import { History, LayoutPanelLeft, Activity } from 'lucide-react';
 
 const PositionsTerminal: React.FC = () => {
   const { positions, closePosition } = useMarketStore();
+  const [activeTab, setActiveTab] = useState<'POSITIONS' | 'HISTORY'>('POSITIONS');
 
   return (
-    <div className="flex-1 flex flex-col bg-[#0d1117] overflow-hidden terminal-border-t">
-      <div className="h-10 px-6 terminal-border-b flex items-center justify-between bg-white/[0.01]">
-        <div className="flex items-center gap-8">
-          <div className="flex items-center gap-2">
-            <span className="text-[10px] font-bold uppercase tracking-widest text-bull">Active Orders</span>
-            <span className="px-1.5 py-0.5 rounded-full bg-bull/10 text-bull text-[9px] font-mono font-bold">{positions.length}</span>
-          </div>
-          <span className="pro-label hover:text-white/40 cursor-pointer transition-colors">History</span>
-          <span className="pro-label hover:text-white/40 cursor-pointer transition-colors">Execution Logs</span>
+    <div className="flex-1 flex flex-col bg-[#0D0E12] overflow-hidden border-t border-white/[0.04]">
+      {/* Tabbed Header */}
+      <div className="h-[42px] px-6 border-b border-white/[0.04] flex items-center justify-between bg-white/[0.01]">
+        <div className="flex items-center gap-8 h-full">
+          <button 
+            onClick={() => setActiveTab('POSITIONS')}
+            className={`flex items-center gap-2 h-full px-1 border-b-2 transition-all ${activeTab === 'POSITIONS' ? 'border-[#3E7BFA] text-white' : 'border-transparent text-white/20 hover:text-white/40'}`}
+          >
+            <Activity size={14} />
+            <span className="pro-label !text-inherit">Active Positions</span>
+            <span className={`px-1.5 py-0.5 rounded-md text-[9px] font-bold font-mono ${activeTab === 'POSITIONS' ? 'bg-[#3E7BFA]/10 text-[#3E7BFA]' : 'bg-white/5 text-white/20'}`}>
+              {positions.length}
+            </span>
+          </button>
+          
+          <button 
+            onClick={() => setActiveTab('HISTORY')}
+            className={`flex items-center gap-2 h-full px-1 border-b-2 transition-all ${activeTab === 'HISTORY' ? 'border-[#3E7BFA] text-white' : 'border-transparent text-white/20 hover:text-white/40'}`}
+          >
+            <History size={14} />
+            <span className="pro-label !text-inherit">Trade History</span>
+          </button>
         </div>
         
-        <div className="flex items-center gap-4">
-           <span className="text-[8px] font-mono text-white/5 uppercase tracking-[0.2em]">Risk: Nominal</span>
-           <div className="w-px h-3 bg-white/[0.03]"></div>
-           <span className="text-[8px] font-mono text-white/5 uppercase tracking-[0.2em]">Engine: v0.1.0</span>
+        <div className="flex items-center gap-4 opacity-20">
+           <span className="text-[9px] font-bold uppercase tracking-widest flex items-center gap-1.5">
+             <div className="w-1 h-1 rounded-full bg-bull"></div>
+             Engine Nominal
+           </span>
         </div>
       </div>
 
       <div className="flex-1 overflow-auto custom-scrollbar">
-        <table className="w-full text-left border-collapse">
-          <thead>
-            <tr className="terminal-border-b bg-white/[0.01]">
-              <th className="px-6 py-2 pro-label">Instrument</th>
-              <th className="px-6 py-2 pro-label">Side / LVG</th>
-              <th className="px-6 py-2 pro-label">Exposure / Margin</th>
-              <th className="px-6 py-2 pro-label">Entry / Liq.</th>
-              <th className="px-6 py-2 pro-label text-right">Unrealized PnL</th>
-              <th className="px-6 py-2 pro-label text-right">Action</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-white/[0.02]">
-            {positions.map((p) => (
-              <tr key={p.id} className="hover:bg-white/[0.01] transition-colors group">
-                <td className="px-6 py-3.5">
-                  <span className="text-[11px] font-bold text-white/80">{p.assetId}</span>
-                </td>
-                <td className="px-6 py-3.5">
-                  <div className="flex flex-col gap-0.5">
-                    <span className={`text-[10px] font-bold uppercase tracking-tight ${p.side === 'LONG' ? 'text-bull' : 'text-bear'}`}>
-                      {p.side}
-                    </span>
-                    <span className="text-[9px] font-mono text-white/20">{p.leverage}x</span>
-                  </div>
-                </td>
-                <td className="px-6 py-3.5">
-                  <div className="flex flex-col gap-0.5">
-                    <span className="text-[10px] font-mono font-bold text-white/60">${(p.margin * p.leverage).toFixed(2)}</span>
-                    <span className="text-[9px] font-mono text-white/10">${p.margin.toFixed(2)}</span>
-                  </div>
-                </td>
-                <td className="px-6 py-3.5">
-                  <div className="flex flex-col gap-0.5">
-                    <span className="text-[10px] font-mono text-white/50">${p.entryPrice.toFixed(2)}</span>
-                    <span className="text-[9px] font-mono text-bear/30">Liq. ${p.liquidationPrice.toFixed(2)}</span>
-                  </div>
-                </td>
-                <td className="px-6 py-3.5 text-right">
-                  <div className="flex flex-col items-end gap-0.5">
-                    <span className={`text-[11px] font-mono font-black ${p.pnl >= 0 ? 'text-bull' : 'text-bear'}`}>
-                      {p.pnl >= 0 ? '+' : ''}{p.pnl.toFixed(2)}
-                    </span>
-                    <span className={`text-[9px] font-mono font-bold ${p.pnl >= 0 ? 'text-bull/30' : 'text-bear/30'}`}>
-                      {((p.pnl / p.margin) * 100).toFixed(2)}%
-                    </span>
-                  </div>
-                </td>
-                <td className="px-6 py-3.5 text-right">
-                  <button 
-                    onClick={() => closePosition(p.id)}
-                    className="px-3 py-1.5 text-[9px] font-bold border border-white/[0.03] bg-white/[0.03] hover:bg-bear/10 hover:text-bear hover:border-bear/20 rounded-md transition-all opacity-20 group-hover:opacity-100 uppercase tracking-widest"
-                  >
-                    Close
-                  </button>
-                </td>
+        {activeTab === 'POSITIONS' ? (
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="bg-white/[0.01]">
+                <th className="px-6 py-2.5 pro-label !text-[9px]">Instrument</th>
+                <th className="px-6 py-2.5 pro-label !text-[9px]">Side / LVG</th>
+                <th className="px-6 py-2.5 pro-label !text-[9px]">Net Size</th>
+                <th className="px-6 py-2.5 pro-label !text-[9px]">Entry / Liq.</th>
+                <th className="px-6 py-2.5 pro-label !text-[9px] text-right">Unrealized PnL</th>
+                <th className="px-6 py-2.5 pro-label !text-[9px] text-right">Actions</th>
               </tr>
-            ))}
-            {positions.length === 0 && (
-              <tr>
-                <td colSpan={6} className="px-6 py-16 text-center">
-                  <div className="flex flex-col items-center gap-3 opacity-10">
-                    <div className="w-10 h-10 rounded-full border border-dashed border-white flex items-center justify-center">
-                      <div className="w-1.5 h-1.5 bg-white rounded-full"></div>
+            </thead>
+            <tbody className="divide-y divide-white/[0.02]">
+              {positions.map((p) => (
+                <tr key={p.id} className="hover:bg-white/[0.01] transition-colors group">
+                  <td className="px-6 py-4">
+                    <div className="flex items-center gap-2">
+                      <div className="w-1.5 h-1.5 rounded-full bg-[#3E7BFA]/40"></div>
+                      <span className="text-[12px] font-bold text-white/90">{p.assetId}USDT</span>
                     </div>
-                    <span className="text-[9px] font-bold uppercase tracking-[0.4em]">Empty Deployment Stack</span>
-                  </div>
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+                  </td>
+                  <td className="px-6 py-4">
+                    <div className="flex flex-col gap-0.5">
+                      <span className={`text-[11px] font-bold uppercase tracking-tight ${p.side === 'LONG' ? 'text-bull' : 'text-bear'}`}>
+                        {p.side}
+                      </span>
+                      <span className="text-[10px] font-mono font-medium text-white/20">{p.leverage}x</span>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4">
+                    <div className="flex flex-col gap-0.5">
+                      <span className="text-[11px] font-mono font-bold text-white/70">${(p.margin * p.leverage).toFixed(2)}</span>
+                      <span className="text-[10px] font-mono text-white/10">${p.margin.toFixed(2)} Margin</span>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4">
+                    <div className="flex flex-col gap-0.5">
+                      <span className="text-[11px] font-mono text-white/50">${p.entryPrice.toFixed(2)}</span>
+                      <span className="text-[10px] font-mono text-bear/40 italic">LIQ. ${p.liquidationPrice.toFixed(2)}</span>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 text-right">
+                    <div className="flex flex-col items-end gap-0.5">
+                      <span className={`text-[12px] font-mono font-bold ${p.pnl >= 0 ? 'text-bull' : 'text-bear'}`}>
+                        {p.pnl >= 0 ? '+' : ''}{p.pnl.toFixed(2)}
+                      </span>
+                      <span className={`text-[10px] font-mono font-medium ${p.pnl >= 0 ? 'text-bull/30' : 'text-bear/30'}`}>
+                        {((p.pnl / p.margin) * 100).toFixed(2)}%
+                      </span>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 text-right">
+                    <button 
+                      onClick={() => closePosition(p.id)}
+                      className="px-4 py-1.5 text-[10px] font-bold bg-white/[0.03] border border-white/[0.05] hover:bg-bear/10 hover:text-bear hover:border-bear/20 rounded-lg transition-all opacity-0 group-hover:opacity-100 uppercase tracking-widest active:scale-95"
+                    >
+                      Close
+                    </button>
+                  </td>
+                </tr>
+              ))}
+              {positions.length === 0 && (
+                <tr>
+                  <td colSpan={6} className="px-6 py-20 text-center">
+                    <div className="flex flex-col items-center gap-4 opacity-5">
+                      <Activity size={32} />
+                      <span className="text-[10px] font-bold uppercase tracking-[0.5em]">No Active Deployments</span>
+                    </div>
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        ) : (
+          <div className="flex flex-col items-center justify-center py-20 opacity-10">
+            <History size={32} className="mb-4" />
+            <span className="text-[10px] font-bold uppercase tracking-[0.5em]">Historical Archive Empty</span>
+          </div>
+        )}
       </div>
     </div>
   );
