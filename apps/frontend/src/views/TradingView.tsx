@@ -76,40 +76,40 @@ const TradingView: React.FC = () => {
             </div>
           </div>
 
-          <div className="flex items-center gap-4 flex-shrink-0 overflow-hidden">
+          <div className="flex items-center gap-3 flex-shrink-0 overflow-hidden">
             {/* Chart Mode Toggle */}
-            <div className="flex items-center bg-white/[0.02] p-1 rounded-lg border border-white/[0.04] hidden md:flex">
+            <div className="flex items-center bg-white/[0.02] p-0.5 rounded-md border border-white/[0.04] hidden md:flex">
                <button 
                   onClick={() => setChartMode('PRICE')}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[9px] font-bold transition-all ${chartMode === 'PRICE' ? 'bg-apex text-[#08090D] shadow-lg' : 'text-white/30 hover:text-white/60'}`}
+                  className={`flex items-center gap-1 px-2 py-1 rounded-[4px] text-[8px] font-bold transition-all ${chartMode === 'PRICE' ? 'bg-apex text-[#08090D] shadow-sm' : 'text-white/30 hover:text-white/60'}`}
                >
-                 <DollarSign size={10} /> PRICE
+                 <DollarSign size={8} /> PRICE
                </button>
                <button 
                   onClick={() => setChartMode('MARKET_CAP')}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[9px] font-bold transition-all ${chartMode === 'MARKET_CAP' ? 'bg-apex text-[#08090D] shadow-lg' : 'text-white/30 hover:text-white/60'}`}
+                  className={`flex items-center gap-1 px-2 py-1 rounded-[4px] text-[8px] font-bold transition-all ${chartMode === 'MARKET_CAP' ? 'bg-apex text-[#08090D] shadow-sm' : 'text-white/30 hover:text-white/60'}`}
                >
-                 <PieChart size={10} /> M.CAP
+                 <PieChart size={8} /> M.CAP
                </button>
             </div>
 
-            <div className="w-px h-4 bg-white/[0.06] flex-shrink-0"></div>
+            <div className="w-px h-3 bg-white/[0.06] flex-shrink-0"></div>
             
             <button 
               onClick={() => chartRef.current?.resetView()}
-              className="p-1.5 rounded-lg bg-white/[0.03] border border-white/[0.05] text-white/20 hover:text-apex transition-all flex-shrink-0"
+              className="p-1 rounded-md bg-white/[0.03] border border-white/[0.05] text-white/20 hover:text-apex transition-all flex-shrink-0"
             >
-              <Maximize2 size={12} />
+              <Maximize2 size={10} />
             </button>
             
-            <div className="w-px h-4 bg-white/[0.06] flex-shrink-0"></div>
+            <div className="w-px h-3 bg-white/[0.06] flex-shrink-0"></div>
             
-            <div className="flex items-center gap-2 bg-white/[0.02] p-1 rounded-lg border border-white/[0.04] overflow-x-auto custom-scrollbar no-scrollbar flex-shrink-0">
+            <div className="flex items-center gap-1 bg-white/[0.02] p-0.5 rounded-md border border-white/[0.04] overflow-x-auto custom-scrollbar no-scrollbar flex-shrink-0">
               {timeframes.slice(2).map(tf => (
                 <button
                   key={tf}
                   onClick={() => setActiveTimeframe(tf)}
-                  className={`px-3 py-1.5 rounded-md text-[10px] font-bold transition-all flex-shrink-0 min-w-[32px] ${activeTimeframe === tf ? 'bg-white/10 text-white shadow-inner border border-white/10' : 'text-white/30 hover:text-white/60 hover:bg-white/5 border border-transparent'}`}
+                  className={`px-2 py-1 rounded-[4px] text-[8px] font-bold transition-all flex-shrink-0 min-w-[24px] ${activeTimeframe === tf ? 'bg-white/10 text-white shadow-inner border border-white/10' : 'text-white/30 hover:text-white/60 hover:bg-white/5 border border-transparent'}`}
                 >
                   {tf.toUpperCase()}
                 </button>

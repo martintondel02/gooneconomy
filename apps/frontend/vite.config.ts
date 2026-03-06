@@ -6,5 +6,6 @@ export default defineConfig({
   server: {
     port: 28080,
     host: '0.0.0.0',
+    allowedHosts: ['economy.goonhub.no'],
   },
 });
