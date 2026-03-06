@@ -53,8 +53,6 @@ services:
     container_name: gooneconomy-frontend
     ports:
       - "28080:28080"
-    environment:
-      VITE_API_URL: "http://localhost:28081"
     depends_on:
       - backend
 

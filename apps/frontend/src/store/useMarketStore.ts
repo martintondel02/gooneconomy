@@ -51,9 +51,6 @@ interface MarketState {
 const getApiUrl = () => {
   const protocol = window.location.protocol;
   const host = window.location.hostname;
-  // If we are on HTTPS, assume the proxy handles the backend on the same port or routes it.
-  // Using relative path is best if proxy routes /api, but since we don't have an /api prefix,
-  // we default to matching protocol and explicit port, or rely on VITE_API_URL if injected.
   if (import.meta.env.VITE_API_URL) {
     return import.meta.env.VITE_API_URL;
   }
