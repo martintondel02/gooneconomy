@@ -1,4 +1,7 @@
-import { PositionManager } from './PositionManager';
+import { PrismaClient } from '@prisma/client';
+import { PositionManager } from './PositionManager.js';
+
+const prisma = new PrismaClient();
 
 export interface LeaderboardEntry {
   username: string;
@@ -9,62 +12,94 @@ export interface LeaderboardEntry {
 
 export class LeaderboardManager {
   private posManager: PositionManager;
-  private users: any[] = [
-    { id: 'dev-user', username: 'GoonWhale', cashBalance: 1242, statusScore: 500 },
-    { id: '2', username: 'ShadowTrader', cashBalance: 5200, statusScore: 200 },
-    { id: '3', username: 'PumpKing', cashBalance: 840, statusScore: 100 },
-    { id: '4', username: 'MossadAgent', cashBalance: 2100, statusScore: 350 },
+  private mockUsers: any[] = [
+    { id: 'mock-1', username: 'GoonWhale', cashBalance: 50000, statusScore: 500 },
+    { id: 'mock-2', username: 'ShadowTrader', cashBalance: 5200, statusScore: 200 },
+    { id: 'mock-3', username: 'PumpKing', cashBalance: 840, statusScore: 100 },
+    { id: 'mock-4', username: 'MossadAgent', cashBalance: 2100, statusScore: 350 },
   ];
 
   constructor(posManager: PositionManager) {
     this.posManager = posManager;
   }
 
-  public getLeaderboard(): LeaderboardEntry[] {
-    const entries = this.users.map(user => {
-      const positions = this.posManager.getActivePositions(user.id);
-      const unrealizedPnL = positions.reduce((acc, p) => acc + this.posManager.calculatePnL(p), 0);
+  public async getLeaderboard(): Promise<LeaderboardEntry[]> {
+    const realUsers = await prisma.user.findMany({
+      take: 20
+    });
+
+    const allUsers = [...this.mockUsers, ...realUsers];
+    const entries: LeaderboardEntry[] = [];
+
+    for (const user of allUsers) {
+      const positions = await this.posManager.getActivePositions(user.id);
+      const unrealizedPnL = positions.reduce((acc: number, p: any) => acc + this.posManager.calculatePnL(p), 0);
       
-      return {
+      entries.push({
         username: user.username,
         netWorth: user.cashBalance + unrealizedPnL,
-        statusScore: user.statusScore
-      };
-    });
+        statusScore: user.statusScore || 0,
+        rank: 0
+      });
+    }
 
     return entries
       .sort((a, b) => b.netWorth - a.netWorth)
       .map((entry, index) => ({ ...entry, rank: index + 1 }));
   }
 
-  public getUser(userId: string) {
-    return this.users.find(u => u.id === userId);
+  public async getUser(userId: string) {
+    if (userId.startsWith('mock-')) {
+      return this.mockUsers.find(u => u.id === userId);
+    }
+    return await prisma.user.findUnique({
+      where: { id: userId }
+    });
   }
 
-  public updateBalance(userId: string, amount: number) {
-    const user = this.getUser(userId);
-    if (user) user.cashBalance += amount;
+  public async updateBalance(userId: string, amount: number) {
+    if (userId.startsWith('mock-')) {
+      const user = this.mockUsers.find(u => u.id === userId);
+      if (user) user.cashBalance += amount;
+      return;
+    }
+    
+    await prisma.user.update({
+      where: { id: userId },
+      data: { cashBalance: { increment: amount } }
+    });
   }
 
-  public claimStimulus(userId: string): { success: boolean; amount: number; nextClaimIn?: number } {
-    const user = this.getUser(userId);
+  public async claimStimulus(userId: string): Promise<{ success: boolean; amount: number; nextClaimIn?: number }> {
+    const user = await this.getUser(userId);
     if (!user) return { success: false, amount: 0 };
 
-    const now = Date.now();
-    const lastClaim = user.lastStimulusClaim || 0;
+    const now = new Date();
+    const lastClaim = user.lastStimulusClaim ? new Date(user.lastStimulusClaim) : new Date(0);
     const cooldown = 24 * 60 * 60 * 1000; // 24 hours
 
-    if (now - lastClaim < cooldown) {
+    if (now.getTime() - lastClaim.getTime() < cooldown) {
       return { 
         success: false, 
         amount: 0, 
-        nextClaimIn: cooldown - (now - lastClaim) 
+        nextClaimIn: cooldown - (now.getTime() - lastClaim.getTime()) 
       };
     }
 
     const stimulusAmount = 100;
-    user.cashBalance += stimulusAmount;
-    user.lastStimulusClaim = now;
+    
+    if (userId.startsWith('mock-')) {
+      user.cashBalance += stimulusAmount;
+      user.lastStimulusClaim = now.getTime();
+    } else {
+      await prisma.user.update({
+        where: { id: userId },
+        data: { 
+          cashBalance: { increment: stimulusAmount },
+          lastStimulusClaim: now
+        }
+      });
+    }
 
     return { success: true, amount: stimulusAmount };
   }

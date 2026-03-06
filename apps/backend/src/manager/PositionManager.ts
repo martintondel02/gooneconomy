@@ -1,38 +1,27 @@
-import { MatchingEngine } from '../engine/MatchingEngine';
+import { PrismaClient } from '@prisma/client';
+import { MatchingEngine } from '../engine/MatchingEngine.js';
+
+const prisma = new PrismaClient();
 
 export enum PositionSide {
   LONG = 'LONG',
   SHORT = 'SHORT'
 }
 
-export interface Position {
-  id: string;
-  userId: string;
-  assetId: string;
-  side: PositionSide;
-  entryPrice: number;
-  quantity: number;
-  leverage: number;
-  margin: number;
-  liquidationPrice: number;
-  isActive: boolean;
-}
-
 export class PositionManager {
-  private positions: Position[] = [];
   private engine: MatchingEngine;
 
   constructor(engine: MatchingEngine) {
     this.engine = engine;
   }
 
-  public openPosition(
+  public async openPosition(
     userId: string,
     assetId: string,
     side: PositionSide,
     margin: number,
     leverage: number
-  ): Position {
+  ) {
     const currentPrice = this.engine.getCurrentPrice(assetId);
     
     // Quantity = (Margin * Leverage) / Price
@@ -44,31 +33,39 @@ export class PositionManager {
       ? currentPrice * (1 - liqBuffer)
       : currentPrice * (1 + liqBuffer);
 
-    const position: Position = {
-      id: Math.random().toString(36).substring(7),
-      userId,
-      assetId,
-      side,
-      entryPrice: currentPrice,
-      quantity,
-      leverage,
-      margin,
-      liquidationPrice,
-      isActive: true
-    };
+    const position = await prisma.position.create({
+      data: {
+        userId,
+        assetId,
+        side: side as any,
+        entryPrice: currentPrice,
+        quantity,
+        leverage,
+        margin,
+        liquidationPrice,
+        isActive: true
+      }
+    });
 
-    this.positions.push(position);
+    // Deduct margin from user balance
+    await prisma.user.update({
+      where: { id: userId },
+      data: { cashBalance: { decrement: margin } }
+    });
+
     return position;
   }
 
-  public getActivePositions(userId?: string): Position[] {
-    if (userId) {
-      return this.positions.filter(p => p.userId === userId && p.isActive);
-    }
-    return this.positions.filter(p => p.isActive);
+  public async getActivePositions(userId?: string) {
+    return await prisma.position.findMany({
+      where: {
+        ...(userId ? { userId } : {}),
+        isActive: true
+      }
+    });
   }
 
-  public calculatePnL(position: Position): number {
+  public calculatePnL(position: any): number {
     const currentPrice = this.engine.getCurrentPrice(position.assetId);
     const priceDiff = position.side === PositionSide.LONG
       ? currentPrice - position.entryPrice
@@ -77,33 +74,49 @@ export class PositionManager {
     return priceDiff * position.quantity;
   }
 
-  public closePosition(positionId: string): { position: Position; pnl: number } | null {
-    const idx = this.positions.findIndex(p => p.id === positionId && p.isActive);
-    if (idx === -1) return null;
+  public async closePosition(positionId: string) {
+    const position = await prisma.position.findUnique({
+      where: { id: positionId, isActive: true }
+    });
 
-    const position = this.positions[idx];
+    if (!position) return null;
+
     const pnl = this.calculatePnL(position);
     
-    position.isActive = false;
-    return { position, pnl };
+    const updatedPosition = await prisma.position.update({
+      where: { id: positionId },
+      data: { isActive: false, closedAt: new Date() }
+    });
+
+    // Return margin + pnl to user
+    await prisma.user.update({
+      where: { id: position.userId },
+      data: { cashBalance: { increment: position.margin + pnl } }
+    });
+
+    return { position: updatedPosition, pnl };
   }
 
-  public checkLiquidations(): { position: Position; pnl: number }[] {
-    const liquidated: { position: Position; pnl: number }[] = [];
+  public async checkLiquidations() {
+    const activePositions = await this.getActivePositions();
+    const liquidated: { position: any; pnl: number }[] = [];
     
-    this.positions.forEach(p => {
-      if (!p.isActive) return;
-      
+    for (const p of activePositions) {
       const currentPrice = this.engine.getCurrentPrice(p.assetId);
       const isLiquidated = p.side === PositionSide.LONG
         ? currentPrice <= p.liquidationPrice
         : currentPrice >= p.liquidationPrice;
 
       if (isLiquidated) {
-        p.isActive = false;
+        await prisma.position.update({
+          where: { id: p.id },
+          data: { isActive: false, closedAt: new Date() }
+        });
+        
+        // Margin is already deducted, so PnL for user is -margin (lost it all)
         liquidated.push({ position: p, pnl: -p.margin });
       }
-    });
+    }
 
     return liquidated;
   }

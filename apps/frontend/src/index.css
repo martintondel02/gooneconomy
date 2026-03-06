@@ -207,7 +207,19 @@ body {
 .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
 .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 10px; }
 
-@keyframes marquee { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+@keyframes scan {
+  from { top: -10%; }
+  to { top: 110%; }
+}
+
+.animate-scan {
+  animation: scan 10s linear infinite;
+}
+
+@keyframes marquee {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
 .animate-marquee { display: inline-block; white-space: nowrap; animation: marquee 60s linear infinite; }
 
 .h-14 { height: 3.5rem; }

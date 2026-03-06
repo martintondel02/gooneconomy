@@ -1,27 +1,34 @@
 import React, { useEffect } from 'react';
-import { Wallet, ShoppingBag, Settings, TrendingUp } from 'lucide-react';
+import { Wallet, ShoppingBag, Settings, TrendingUp, LogOut } from 'lucide-react';
 import { useMarketStore } from './store/useMarketStore';
 import TradingView from './views/TradingView';
 import PortfolioView from './views/PortfolioView';
 import ShopView from './views/ShopView';
+import AuthView from './views/AuthView';
 
 function App() {
   const { 
     prices, 
     leaderboard,
     user,
+    token,
     positions,
     activeTab,
     connect, 
     disconnect, 
     setActiveTab,
-    claimStimulus
+    claimStimulus,
+    logout
   } = useMarketStore();
 
   useEffect(() => {
     connect();
     return () => disconnect();
   }, [connect, disconnect]);
+
+  if (!token || !user) {
+    return <AuthView />;
+  }
 
   const tickers = ['GOON', 'BTC', 'ETH', 'NVDA', 'PUMPKIN', 'MOSSAD', 'AAPL', 'TSLA', 'GOLD'];
 
@@ -97,8 +104,20 @@ function App() {
             {activeTab === 'SHOP' && <div className="absolute left-0 top-1/4 w-1 h-1/2 bg-cyan-400 rounded-r-full shadow-[0_0_10px_#00f3ff]"></div>}
           </div>
 
-          <div className="mt-auto p-3 cursor-pointer text-white/10 hover:text-white/30 transition-colors">
-            <Settings size={20} />
+          <div className="mt-auto flex flex-col items-center gap-4 mb-2">
+            <span className="text-[8px] font-mono text-white/20 font-bold -rotate-90 origin-center whitespace-nowrap">v0.0.1</span>
+            
+            <div 
+              onClick={() => logout()}
+              className="p-3 cursor-pointer text-white/10 hover:text-bear transition-colors group relative"
+              title="Logout"
+            >
+              <LogOut size={20} />
+            </div>
+
+            <div className="p-3 cursor-pointer text-white/10 hover:text-white/30 transition-colors">
+              <Settings size={20} />
+            </div>
           </div>
         </aside>
 

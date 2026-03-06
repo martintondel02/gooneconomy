@@ -8,6 +8,7 @@ import { ShadowMarketMaker } from './engine/ShadowMarketMaker.js';
 import { CandleStore } from './store/CandleStore.js';
 import { PositionManager, PositionSide } from './manager/PositionManager.js';
 import { LeaderboardManager } from './manager/LeaderboardManager.js';
+import { AuthManager } from './manager/AuthManager.js';
 
 dotenv.config();
 
@@ -27,6 +28,7 @@ const engine = new MatchingEngine();
 const candleStore = new CandleStore();
 const posManager = new PositionManager(engine);
 const leaderboard = new LeaderboardManager(posManager);
+const authManager = new AuthManager();
 
 const initialAssets = [
   { id: '1', ticker: 'GOON', name: 'GoonCoin', type: 'CRYPTO', price: 142.32, supply: 1000000 },
@@ -52,13 +54,27 @@ const assetConfigs = initialAssets.map(a => ({
 }));
 
 const shadowMarketMaker = new ShadowMarketMaker(engine, assetConfigs);
-// shadowMarketMaker.start(); // Will be triggered manually in the 1Hz loop
 
 app.use(cors());
 app.use(express.json());
 
 app.get('/health', (req, res) => {
-  res.json({ status: 'ok', timestamp: Date.now() });
+  res.json({ status: 'ok', version: '0.0.1', timestamp: Date.now() });
+});
+
+// Auth Routes
+app.post('/auth/register', async (req, res) => {
+  const { username, password } = req.body;
+  const result = await authManager.register(username, password);
+  if (result.error) return res.status(400).json(result);
+  res.json(result);
+});
+
+app.post('/auth/login', async (req, res) => {
+  const { username, password } = req.body;
+  const result = await authManager.login(username, password);
+  if (result.error) return res.status(401).json(result);
+  res.json(result);
 });
 
 app.get('/assets', (req, res) => {
@@ -76,88 +92,97 @@ app.get('/candles/:assetId', (req, res) => {
   res.json(candles);
 });
 
-app.post('/trade/open', (req, res) => {
+app.post('/trade/open', async (req, res) => {
   const { userId, assetId, side, margin, leverage } = req.body;
-  const position = posManager.openPosition(userId, assetId, side as PositionSide, margin, leverage);
+  const position = await posManager.openPosition(userId, assetId, side as PositionSide, margin, leverage);
   res.json(position);
 });
 
-app.post('/trade/close', (req, res) => {
+app.post('/trade/close', async (req, res) => {
   const { positionId } = req.body;
-  const result = posManager.closePosition(positionId);
+  const result = await posManager.closePosition(positionId);
   if (!result) return res.status(404).json({ error: 'Position not found' });
-  
-  // Update user balance
-  leaderboard.updateBalance(result.position.userId, result.pnl);
-  
   res.json(result);
 });
 
-app.get('/leaderboard', (req, res) => {
-  res.json(leaderboard.getLeaderboard());
+app.get('/leaderboard', async (req, res) => {
+  res.json(await leaderboard.getLeaderboard());
 });
 
-app.get('/user/:userId', (req, res) => {
-  const user = leaderboard.getUser(req.params.userId);
+app.get('/user/:userId', async (req, res) => {
+  const user = await leaderboard.getUser(req.params.userId);
   if (!user) return res.status(404).json({ error: 'User not found' });
   res.json(user);
 });
 
-app.post('/user/claim-stimulus', (req, res) => {
+app.post('/user/claim-stimulus', async (req, res) => {
   const { userId } = req.body;
-  const result = leaderboard.claimStimulus(userId);
+  const result = await leaderboard.claimStimulus(userId);
   res.json(result);
 });
 
 // Real-time price and candle update loop
-setInterval(() => {
-  // 1. Tick the Market Maker (1Hz high-frequency volatility)
-  shadowMarketMaker.tick();
+setInterval(async () => {
+  try {
+    shadowMarketMaker.tick();
 
-  const currentPrices: Record<string, number> = {};
-  const currentMarketCaps: Record<string, number> = {};
+    const currentPrices: Record<string, number> = {};
+    const currentMarketCaps: Record<string, number> = {};
 
-  initialAssets.forEach(asset => {
-    const currentPrice = engine.getCurrentPrice(asset.id);
-    const marketCap = currentPrice * (asset as any).supply;
+    initialAssets.forEach(asset => {
+      const currentPrice = engine.getCurrentPrice(asset.id);
+      const marketCap = currentPrice * (asset as any).supply;
+      
+      currentPrices[asset.ticker] = currentPrice;
+      currentMarketCaps[asset.ticker] = marketCap;
+      candleStore.update(asset.id, marketCap);
+    });
     
-    currentPrices[asset.ticker] = currentPrice;
-    currentMarketCaps[asset.ticker] = marketCap;
+    // Check liquidations
+    const liquidations = await posManager.checkLiquidations();
 
-    // 2. Update Multi-Timeframe Candle Store with Market Cap
-    candleStore.update(asset.id, marketCap);
-  });
-  
-  // Check liquidations
-  const liquidations = posManager.checkLiquidations();
-  liquidations.forEach(l => {
-    leaderboard.updateBalance(l.position.userId, l.pnl);
-  });
+    if (liquidations.length > 0) {
+      io.emit('market:liquidations', liquidations);
+    }
 
-  if (liquidations.length > 0) {
-    io.emit('market:liquidations', liquidations);
+    // Live PnL for all active positions
+    const allActivePositions = await posManager.getActivePositions();
+    const activePositionsWithPnL = allActivePositions.map((p: any) => ({
+      ...p,
+      pnl: posManager.calculatePnL(p),
+      currentPrice: engine.getCurrentPrice(p.assetId)
+    }));
+
+    const lbData = await leaderboard.getLeaderboard();
+
+    io.emit('market:prices', currentPrices);
+    io.emit('market:caps', currentMarketCaps);
+    io.emit('user:positions', activePositionsWithPnL);
+    io.emit('market:leaderboard', lbData);
+    
+    // Individual user data updates
+    const connectedUserIds = Array.from(io.sockets.adapter.rooms.keys())
+      .filter(room => room.startsWith('user:'))
+      .map(room => room.replace('user:', ''));
+
+    for (const userId of connectedUserIds) {
+      const userData = await leaderboard.getUser(userId);
+      if (userData) {
+        io.to(`user:${userId}`).emit('user:data', userData);
+      }
+    }
+  } catch (err) {
+    console.error('Error in market update loop:', err);
   }
-
-  // Live PnL for active positions
-  const activePositions = posManager.getActivePositions().map(p => ({
-    ...p,
-    pnl: posManager.calculatePnL(p),
-    currentPrice: engine.getCurrentPrice(p.assetId)
-  }));
-
-  const lbData = leaderboard.getLeaderboard();
-  const currentUser = leaderboard.getUser('dev-user');
-
-  io.emit('market:prices', currentPrices);
-  io.emit('market:caps', currentMarketCaps);
-  io.emit('user:positions', activePositions);
-  io.emit('market:leaderboard', lbData);
-  io.emit('user:data', currentUser);
 }, 1000);
 
 io.on('connection', (socket) => {
   console.log('Client connected:', socket.id);
   
+  socket.on('subscribe:user', (userId) => {
+    socket.join(`user:${userId}`);
+  });
+
   socket.on('disconnect', () => {
     console.log('Client disconnected:', socket.id);
   });

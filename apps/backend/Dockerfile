@@ -11,6 +11,9 @@ COPY apps/backend ./apps/backend
 # Install dependencies
 RUN npm install
 
+# Generate Prisma Client
+RUN npx prisma generate --schema=apps/backend/prisma/schema.prisma
+
 # Build shared and backend
 RUN npm run build -w packages/shared
 RUN npm run build -w apps/backend

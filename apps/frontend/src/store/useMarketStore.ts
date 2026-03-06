@@ -8,18 +8,23 @@ interface MarketState {
   positions: any[];
   leaderboard: any[];
   user: any | null;
+  token: string | null;
   activeAsset: any | null;
   activeTimeframe: string;
   activeTab: 'TRADING' | 'PORTFOLIO' | 'SHOP';
   socket: Socket | null;
   connect: () => void;
   disconnect: () => void;
+  login: (username: string, password: string) => Promise<{ error?: string }>;
+  register: (username: string, password: string) => Promise<{ error?: string }>;
+  logout: () => void;
   setActiveAsset: (asset: any) => void;
   setActiveTimeframe: (tf: string) => void;
   setActiveTab: (tab: 'TRADING' | 'PORTFOLIO' | 'SHOP') => void;
   openPosition: (side: 'LONG' | 'SHORT', margin: number, leverage: number) => Promise<void>;
   closePosition: (positionId: string) => Promise<void>;
   claimStimulus: () => Promise<void>;
+  fetchUser: () => Promise<void>;
 }
 
 export const useMarketStore = create<MarketState>((set, get) => ({
@@ -29,6 +34,7 @@ export const useMarketStore = create<MarketState>((set, get) => ({
   positions: [],
   leaderboard: [],
   user: null,
+  token: localStorage.getItem('goon_token'),
   activeAsset: null,
   activeTimeframe: '1m',
   activeTab: 'TRADING',
@@ -41,28 +47,24 @@ export const useMarketStore = create<MarketState>((set, get) => ({
     const apiUrl = `http://${host}:28081`;
     const socket = io(apiUrl);
     
-    socket.on('connect', () => console.log('Connected to backend:', apiUrl));
-    socket.on('connect_error', (err) => console.error('Socket connection error:', err));
-
-    socket.on('market:prices', (prices: Record<string, number>) => {
-      set({ prices });
+    socket.on('connect', () => {
+      console.log('Connected to backend:', apiUrl);
+      const { user } = get();
+      if (user) {
+        socket.emit('subscribe:user', user.id);
+      }
     });
 
-    socket.on('market:caps', (marketCaps: Record<string, number>) => {
-      set({ marketCaps });
-    });
-
+    socket.on('market:prices', (prices: Record<string, number>) => set({ prices }));
+    socket.on('market:caps', (marketCaps: Record<string, number>) => set({ marketCaps }));
     socket.on('user:positions', (positions: any[]) => {
-      set({ positions });
+      const { user } = get();
+      if (user) {
+        const userPositions = positions.filter(p => p.userId === user.id);
+        set({ positions: userPositions });
+      }
     });
-
-    socket.on('market:leaderboard', (leaderboard: any[]) => {
-      set({ leaderboard });
-    });
-
-    socket.on('user:data', (user: any) => {
-      set({ user });
-    });
+    socket.on('market:leaderboard', (leaderboard: any[]) => set({ leaderboard }));
 
     // Fetch initial assets
     fetch(`${apiUrl}/assets`)
@@ -72,6 +74,12 @@ export const useMarketStore = create<MarketState>((set, get) => ({
       });
 
     set({ socket });
+
+    // If we have a token but no user, fetch user
+    const { token, user } = get();
+    if (token && !user) {
+      get().fetchUser();
+    }
   },
 
   disconnect: () => {
@@ -82,18 +90,92 @@ export const useMarketStore = create<MarketState>((set, get) => ({
     }
   },
 
-  setActiveAsset: (asset: any) => set({ activeAsset: asset }),
+  fetchUser: async () => {
+    const { token } = get();
+    if (!token) return;
 
-  setActiveTimeframe: (tf: string) => {
-    console.log('Changing timeframe to:', tf);
-    set({ activeTimeframe: tf });
+    try {
+      // For now, we decode userId from JWT or have a /me endpoint
+      // Let's assume the token is the userId for simplicity in v0.0.1 or we'd need a /me
+      // Actually, let's just store user object in localStorage for now to keep it simple
+      const storedUser = localStorage.getItem('goon_user');
+      if (storedUser) {
+        const user = JSON.parse(storedUser);
+        set({ user });
+        
+        // Refresh user data from server
+        const host = window.location.hostname;
+        const apiUrl = `http://${host}:28081`;
+        const res = await fetch(`${apiUrl}/user/${user.id}`);
+        if (res.ok) {
+          const freshUser = await res.json();
+          set({ user: freshUser });
+          localStorage.setItem('goon_user', JSON.stringify(freshUser));
+          
+          const { socket } = get();
+          if (socket) socket.emit('subscribe:user', freshUser.id);
+        }
+      }
+    } catch (e) {
+      console.error('Failed to fetch user', e);
+    }
   },
 
+  login: async (username, password) => {
+    const host = window.location.hostname;
+    const apiUrl = `http://${host}:28081`;
+    const res = await fetch(`${apiUrl}/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password })
+    });
+    const result = await res.json();
+    if (result.error) return result;
+
+    localStorage.setItem('goon_token', result.token);
+    localStorage.setItem('goon_user', JSON.stringify(result.user));
+    set({ token: result.token, user: result.user });
+    
+    const { socket } = get();
+    if (socket) socket.emit('subscribe:user', result.user.id);
+    
+    return {};
+  },
+
+  register: async (username, password) => {
+    const host = window.location.hostname;
+    const apiUrl = `http://${host}:28081`;
+    const res = await fetch(`${apiUrl}/auth/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password })
+    });
+    const result = await res.json();
+    if (result.error) return result;
+
+    localStorage.setItem('goon_token', result.token);
+    localStorage.setItem('goon_user', JSON.stringify(result.user));
+    set({ token: result.token, user: result.user });
+
+    const { socket } = get();
+    if (socket) socket.emit('subscribe:user', result.user.id);
+
+    return {};
+  },
+
+  logout: () => {
+    localStorage.removeItem('goon_token');
+    localStorage.removeItem('goon_user');
+    set({ token: null, user: null, positions: [] });
+  },
+
+  setActiveAsset: (asset: any) => set({ activeAsset: asset }),
+  setActiveTimeframe: (tf: string) => set({ activeTimeframe: tf }),
   setActiveTab: (tab: 'TRADING' | 'PORTFOLIO' | 'SHOP') => set({ activeTab: tab }),
 
   openPosition: async (side, margin, leverage) => {
-    const { activeAsset } = get();
-    if (!activeAsset) return;
+    const { activeAsset, user } = get();
+    if (!activeAsset || !user) return;
 
     const host = window.location.hostname;
     const apiUrl = `http://${host}:28081`;
@@ -101,13 +183,14 @@ export const useMarketStore = create<MarketState>((set, get) => ({
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        userId: 'dev-user', 
+        userId: user.id, 
         assetId: activeAsset.id,
         side,
         margin,
         leverage
       })
     });
+    get().fetchUser(); // Refresh balance
   },
 
   closePosition: async (positionId: string) => {
@@ -118,20 +201,26 @@ export const useMarketStore = create<MarketState>((set, get) => ({
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ positionId })
     });
+    get().fetchUser(); // Refresh balance
   },
 
   claimStimulus: async () => {
+    const { user } = get();
+    if (!user) return;
+
     const host = window.location.hostname;
     const apiUrl = `http://${host}:28081`;
     const res = await fetch(`${apiUrl}/user/claim-stimulus`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId: 'dev-user' })
+      body: JSON.stringify({ userId: user.id })
     });
     const result = await res.json();
     if (!result.success && result.nextClaimIn) {
       const hours = Math.floor(result.nextClaimIn / (60 * 60 * 1000));
       alert(`Stimulus available in ${hours} hours.`);
+    } else {
+      get().fetchUser(); // Refresh balance
     }
   }
 }));
