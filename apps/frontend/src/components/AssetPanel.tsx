@@ -63,7 +63,7 @@ const AssetPanel: React.FC = () => {
                 <div className="flex items-center gap-2">
                    <div className="w-5 h-5 rounded-md bg-white/5 border border-white/5 flex items-center justify-center overflow-hidden">
                       {asset.imageUrl ? (
-                        <img src={`http://${window.location.hostname}:28081${asset.imageUrl}`} className="w-full h-full object-cover" />
+                        <img src={asset.imageUrl} className="w-full h-full object-cover" />
                       ) : <ImageIcon size={10} className="opacity-20" />}
                    </div>
                    <span className={`text-[12px] font-bold tracking-tight ${isActive ? 'text-apex' : 'text-white/80'}`}>

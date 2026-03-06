@@ -55,7 +55,7 @@ const TradingView: React.FC = () => {
             <div className="flex items-center gap-3 flex-shrink-0">
               <div className="w-7 h-7 rounded-lg bg-white/[0.03] flex items-center justify-center border border-white/[0.05] overflow-hidden">
                 {activeAsset?.imageUrl ? (
-                   <img src={`http://${window.location.hostname}:28081${activeAsset.imageUrl}`} className="w-full h-full object-cover" />
+                   <img src={activeAsset.imageUrl} className="w-full h-full object-cover" />
                 ) : (
                    <Activity size={14} className="text-apex" />
                 )}

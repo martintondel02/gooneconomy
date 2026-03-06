@@ -185,9 +185,8 @@ const AdminView: React.FC = () => {
                               <div className="flex items-center gap-3">
                                 <div className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center overflow-hidden">
                                    {asset.imageUrl ? (
-                                     <img src={`http://${window.location.hostname}:28081${asset.imageUrl}`} className="w-full h-full object-cover" />
-                                   ) : <ImageIcon size={14} className="opacity-20" />}
-                                </div>
+                                     <img src={asset.imageUrl} className="w-full h-full object-cover" />
+                                   ) : <ImageIcon size={14} className="opacity-20" />}                                </div>
                                 <div className="flex flex-col">
                                   <span className="text-sm font-bold text-white tracking-tight">{asset.ticker}</span>
                                   <span className="text-[9px] text-white/20 uppercase font-medium">{asset.name}</span>
