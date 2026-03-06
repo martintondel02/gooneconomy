@@ -1,6 +1,6 @@
 import React from 'react';
 import { useMarketStore } from '../store/useMarketStore';
-import { Search, TrendingUp, TrendingDown } from 'lucide-react';
+import { Search, TrendingUp, TrendingDown, Image as ImageIcon } from 'lucide-react';
 
 const AssetPanel: React.FC = () => {
   const { assets, marketCaps, prices, activeAsset, setActiveAsset } = useMarketStore();
@@ -36,9 +36,16 @@ const AssetPanel: React.FC = () => {
               className={`mx-2 px-3 py-3 cursor-pointer rounded-xl transition-all mb-1 ${isActive ? 'bg-[#3E7BFA]/10' : 'hover:bg-white/[0.02]'}`}
             >
               <div className="flex justify-between items-center mb-1">
-                <span className={`text-[12px] font-bold tracking-tight ${isActive ? 'text-[#3E7BFA]' : 'text-white/80'}`}>
-                  {asset.ticker}
-                </span>
+                <div className="flex items-center gap-2">
+                   <div className="w-5 h-5 rounded-md bg-white/5 border border-white/5 flex items-center justify-center overflow-hidden">
+                      {asset.imageUrl ? (
+                        <img src={`http://${window.location.hostname}:28081${asset.imageUrl}`} className="w-full h-full object-cover" />
+                      ) : <ImageIcon size={10} className="opacity-20" />}
+                   </div>
+                   <span className={`text-[12px] font-bold tracking-tight ${isActive ? 'text-[#3E7BFA]' : 'text-white/80'}`}>
+                     {asset.ticker}
+                   </span>
+                </div>
                 <span className={`text-[12px] font-mono font-bold ${isUp ? 'text-bull' : 'text-bear'}`}>
                   ${prices[asset.ticker]?.toFixed(prices[asset.ticker] < 1 ? 3 : 2)}
                 </span>

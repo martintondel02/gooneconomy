@@ -17,6 +17,9 @@ const Chart = forwardRef<ChartHandle, ChartProps>(({ assetId, ticker }, ref) => 
   const candleSeriesRef = useRef<ISeriesApi<'Candlestick'>>(null);
   const [loading, setLoading] = useState(true);
   const { prices, activeTimeframe } = useMarketStore();
+  
+  // Track high/low locally for the current candle to avoid "flat" candles during live updates
+  const currentCandleRef = useRef<{time: number, open: number, high: number, low: number, close: number} | null>(null);
 
   useImperativeHandle(ref, () => ({
     resetView: () => {
@@ -38,12 +41,27 @@ const Chart = forwardRef<ChartHandle, ChartProps>(({ assetId, ticker }, ref) => 
     const duration = durationMap[activeTimeframe] || 60;
     const now = Math.floor(Date.now() / 1000 / duration) * duration;
 
-    // Use update() to evolve the current candle in real-time
-    candleSeriesRef.current.update({
-      time: now as any,
-      close: currentPrice,
-    } as any);
-  }, [prices[ticker], activeTimeframe]);
+    let candle = currentCandleRef.current;
+
+    if (!candle || candle.time !== now) {
+      // New candle started
+      candle = {
+        time: now,
+        open: currentPrice,
+        high: currentPrice,
+        low: currentPrice,
+        close: currentPrice
+      };
+    } else {
+      // Update existing candle
+      candle.high = Math.max(candle.high, currentPrice);
+      candle.low = Math.min(candle.low, currentPrice);
+      candle.close = currentPrice;
+    }
+
+    currentCandleRef.current = candle;
+    candleSeriesRef.current.update(candle as any);
+  }, [prices[ticker], activeTimeframe, ticker]);
 
   useEffect(() => {
     if (!chartContainerRef.current) return;
@@ -102,6 +120,9 @@ const Chart = forwardRef<ChartHandle, ChartProps>(({ assetId, ticker }, ref) => 
       .then(data => {
         if (data && data.length > 0) {
           candleSeries.setData(data);
+          // Set the last candle from history as the "current" one so update() merges correctly
+          const lastCandle = data[data.length - 1];
+          currentCandleRef.current = { ...lastCandle };
           chart.timeScale().fitContent();
         }
         setLoading(false);

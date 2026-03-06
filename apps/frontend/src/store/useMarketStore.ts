@@ -31,9 +31,10 @@ interface MarketState {
   // Admin Actions
   adminAssets: any[];
   fetchAdminAssets: () => Promise<void>;
-  addAsset: (data: any) => Promise<void>;
-  editAsset: (data: any) => Promise<void>;
-  setMarketBias: (assetId: string, bias: number) => Promise<void>;
+  addAsset: (formData: FormData) => Promise<void>;
+  editAsset: (id: string, formData: FormData) => Promise<void>;
+  setMarketEvent: (assetId: string, magnitude: number, durationSeconds: number) => Promise<void>;
+  clearMarketEvents: (assetId: string) => Promise<void>;
 }
 
 export const useMarketStore = create<MarketState>((set, get) => ({
@@ -237,7 +238,6 @@ export const useMarketStore = create<MarketState>((set, get) => ({
     get().fetchTrades();
   },
 
-  // Admin Implementation
   fetchAdminAssets: async () => {
     const host = window.location.hostname;
     const apiUrl = `http://${host}:28081`;
@@ -246,36 +246,43 @@ export const useMarketStore = create<MarketState>((set, get) => ({
     set({ adminAssets: data });
   },
 
-  addAsset: async (data) => {
+  addAsset: async (formData) => {
     const host = window.location.hostname;
     const apiUrl = `http://${host}:28081`;
     await fetch(`${apiUrl}/admin/assets/add`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data)
+      body: formData
     });
     get().fetchAdminAssets();
   },
 
-  editAsset: async (data) => {
+  editAsset: async (id, formData) => {
     const host = window.location.hostname;
     const apiUrl = `http://${host}:28081`;
-    await fetch(`${apiUrl}/admin/assets/edit`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data)
+    await fetch(`${apiUrl}/admin/assets/${id}`, {
+      method: 'PATCH',
+      body: formData
     });
     get().fetchAdminAssets();
   },
 
-  setMarketBias: async (assetId, bias) => {
+  setMarketEvent: async (assetId, magnitude, durationSeconds) => {
     const host = window.location.hostname;
     const apiUrl = `http://${host}:28081`;
-    await fetch(`${apiUrl}/admin/market/bias`, {
+    await fetch(`${apiUrl}/admin/market/event`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ assetId, bias })
+      body: JSON.stringify({ assetId, magnitude, durationSeconds })
     });
-    get().fetchAdminAssets();
+  },
+
+  clearMarketEvents: async (assetId) => {
+    const host = window.location.hostname;
+    const apiUrl = `http://${host}:28081`;
+    await fetch(`${apiUrl}/admin/market/clear`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ assetId })
+    });
   }
 }));

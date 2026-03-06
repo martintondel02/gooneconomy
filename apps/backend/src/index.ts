@@ -1,8 +1,10 @@
-import express from 'express';
+import express, { Request } from 'express';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import multer from 'multer';
+import fs from 'fs';
 import { PrismaClient } from '@prisma/client';
 import { MatchingEngine } from './engine/MatchingEngine.js';
 import { ShadowMarketMaker } from './engine/ShadowMarketMaker.js';
@@ -24,6 +26,18 @@ const io = new Server(httpServer, {
 });
 
 const port = process.env.PORT || 28081;
+
+// Setup File Uploads
+const uploadDir = './public/uploads';
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true });
+}
+
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => cb(null, uploadDir),
+  filename: (req, file, cb) => cb(null, `${Date.now()}-${file.originalname}`)
+});
+const upload = multer({ storage });
 
 // Initialize Market Engines
 const engine = new MatchingEngine();
@@ -75,9 +89,10 @@ async function initializeServer() {
 
 app.use(cors());
 app.use(express.json());
+app.use('/uploads', express.static('public/uploads'));
 
 app.get('/health', (req, res) => {
-  res.json({ status: 'ok', version: '0.4.0', timestamp: Date.now() });
+  res.json({ status: 'ok', version: '0.5.0', timestamp: Date.now() });
 });
 
 // Auth Routes
@@ -97,27 +112,50 @@ app.post('/auth/login', async (req, res) => {
 
 // Admin Routes
 app.get('/admin/assets', async (req, res) => {
-  const assets = await prisma.asset.findMany();
+  const assets = await prisma.asset.findMany({ orderBy: { ticker: 'asc' } });
   res.json(assets);
 });
 
-app.post('/admin/assets/add', async (req, res) => {
-  const asset = await prisma.asset.create({ data: req.body });
-  await engine.syncFromDb();
-  res.json(asset);
+app.post('/admin/assets/add', upload.single('image'), async (req: Request, res) => {
+  try {
+    const data = JSON.parse(req.body.data);
+    if (req.file) {
+      data.imageUrl = `/uploads/${req.file.filename}`;
+    }
+    const asset = await prisma.asset.create({ data });
+    await engine.syncFromDb();
+    res.json(asset);
+  } catch (e: any) {
+    res.status(400).json({ error: e.message });
+  }
 });
 
-app.post('/admin/assets/edit', async (req, res) => {
-  const { id, ...data } = req.body;
-  const asset = await prisma.asset.update({ where: { id }, data });
-  await engine.syncFromDb();
-  res.json(asset);
+app.patch('/admin/assets/:id', upload.single('image'), async (req: Request, res) => {
+  try {
+    const data = JSON.parse(req.body.data);
+    if (req.file) {
+      data.imageUrl = `/uploads/${req.file.filename}`;
+    }
+    const asset = await prisma.asset.update({ 
+      where: { id: req.params.id }, 
+      data 
+    });
+    await engine.syncFromDb();
+    res.json(asset);
+  } catch (e: any) {
+    res.status(400).json({ error: e.message });
+  }
 });
 
-app.post('/admin/market/bias', async (req, res) => {
-  const { assetId, bias } = req.body;
-  await prisma.asset.update({ where: { id: assetId }, data: { manualBias: bias } });
-  await engine.syncFromDb();
+app.post('/admin/market/event', async (req, res) => {
+  const { assetId, magnitude, durationSeconds } = req.body;
+  shadowMarketMaker.setMarketEvent(assetId, magnitude, durationSeconds);
+  res.json({ success: true });
+});
+
+app.post('/admin/market/clear', async (req, res) => {
+  const { assetId } = req.body;
+  shadowMarketMaker.clearEvents(assetId);
   res.json({ success: true });
 });
 
@@ -171,7 +209,6 @@ setInterval(async () => {
 
     const assets = engine.getAssets();
     assets.forEach(asset => {
-      // Update candle store every 100ms for high-precision OHLC
       candleStore.update(asset.id, asset.currentPrice);
     });
   } catch (err) {
@@ -196,14 +233,11 @@ setInterval(async () => {
       orderbooks[asset.id] = engine.getOrderBook(asset.id);
     });
     
-    // Check liquidations
     const liquidations = await posManager.checkLiquidations();
-
     if (liquidations.length > 0) {
       io.emit('market:liquidations', liquidations);
     }
 
-    // Live PnL for all active positions
     const allActivePositions = await posManager.getActivePositions();
     const activePositionsWithPnL = allActivePositions.map((p: any) => ({
       ...p,
@@ -219,7 +253,6 @@ setInterval(async () => {
     io.emit('user:positions', activePositionsWithPnL);
     io.emit('market:leaderboard', lbData);
     
-    // Individual user data updates
     const connectedUserIds = Array.from(io.sockets.adapter.rooms.keys())
       .filter(room => room.startsWith('user:'))
       .map(room => room.replace('user:', ''));
@@ -246,11 +279,9 @@ setInterval(async () => {
 
 io.on('connection', (socket) => {
   console.log('Client connected:', socket.id);
-  
   socket.on('subscribe:user', (userId) => {
     socket.join(`user:${userId}`);
   });
-
   socket.on('disconnect', () => {
     console.log('Client disconnected:', socket.id);
   });

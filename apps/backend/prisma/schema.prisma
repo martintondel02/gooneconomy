@@ -33,6 +33,7 @@ model Asset {
   id           String    @id @default(uuid())
   ticker       String    @unique
   name         String
+  imageUrl     String?
   type         AssetType
   currentPrice Float
   totalSupply  Float
