@@ -12,13 +12,14 @@ export interface ChartHandle {
   resetView: () => void;
 }
 
+const MARKER_TTL_MS = 20000;
+
 const Chart = forwardRef<ChartHandle, ChartProps>(({ assetId, ticker, mode = 'MARKET_CAP' }, ref) => {
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<any>(null);
   const candleSeriesRef = useRef<ISeriesApi<'Candlestick'>>(null);
   const [loading, setLoading] = useState(true);
   
-  // Notice we pull 'trades' which holds the user's specific trade history
   const { prices, marketCaps, activeTimeframe, assets, trades } = useMarketStore();
   
   const currentAsset = assets.find(a => a.id === assetId);
@@ -32,27 +33,63 @@ const Chart = forwardRef<ChartHandle, ChartProps>(({ assetId, ticker, mode = 'MA
     }
   }));
 
-  // Render Trade Markers
+  // Render Trade Markers with TTL and Clustering
   useEffect(() => {
     if (!candleSeriesRef.current) return;
     
-    // Filter trades for the current asset and sort by time ascending
-    const assetTrades = trades.filter(t => t.assetId === assetId).sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
-    
-    const markers = assetTrades.map(trade => {
-      const isBuy = trade.type === 'BUY';
-      return {
-        time: Math.floor(new Date(trade.timestamp).getTime() / 1000) as any,
-        position: isBuy ? 'belowBar' as SeriesMarkerPosition : 'aboveBar' as SeriesMarkerPosition,
-        color: isBuy ? '#00FF94' : '#FF3E60',
-        shape: isBuy ? 'arrowUp' as SeriesMarkerShape : 'arrowDown' as SeriesMarkerShape,
-        text: `${trade.type} @ $${trade.priceAtExecution.toFixed(2)}`,
-        size: 1.5
-      };
-    });
+    const updateMarkers = () => {
+      if (!candleSeriesRef.current) return;
 
-    candleSeriesRef.current.setMarkers(markers);
-  }, [trades, assetId, mode]); // Re-render if trades or mode changes
+      const now = Date.now();
+      const assetTrades = trades
+        .filter(t => t.assetId === assetId && (now - new Date(t.timestamp).getTime() <= MARKER_TTL_MS))
+        .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+      
+      const groupedMarkers: Record<string, any> = {};
+
+      assetTrades.forEach(trade => {
+        const time = Math.floor(new Date(trade.timestamp).getTime() / 1000);
+        const isBuy = trade.type === 'BUY';
+        const key = `${time}-${trade.type}`; // Group by exact second AND trade direction
+
+        if (!groupedMarkers[key]) {
+          groupedMarkers[key] = {
+            count: 1,
+            totalValue: trade.priceAtExecution * trade.quantity,
+            totalQuantity: trade.quantity,
+            marker: {
+              time: time as any,
+              position: isBuy ? 'belowBar' as SeriesMarkerPosition : 'aboveBar' as SeriesMarkerPosition,
+              color: isBuy ? '#00FF94' : '#FF3E60',
+              shape: isBuy ? 'arrowUp' as SeriesMarkerShape : 'arrowDown' as SeriesMarkerShape,
+              text: `${trade.type} @ $${trade.priceAtExecution.toFixed(2)}`,
+              size: 1.5
+            }
+          };
+        } else {
+          const group = groupedMarkers[key];
+          group.count += 1;
+          group.totalValue += trade.priceAtExecution * trade.quantity;
+          group.totalQuantity += trade.quantity;
+          
+          const avgPrice = group.totalValue / group.totalQuantity;
+          group.marker.text = `${group.count}x ${trade.type} @ ~$${avgPrice.toFixed(2)}`;
+          group.marker.size = Math.min(1.5 + (group.count * 0.3), 3); // Increase size slightly for big clusters
+        }
+      });
+
+      const finalMarkers = Object.values(groupedMarkers).map(g => g.marker);
+      candleSeriesRef.current.setMarkers(finalMarkers);
+    };
+
+    // Run immediately
+    updateMarkers();
+
+    // Set interval to clear out old markers
+    const intervalId = setInterval(updateMarkers, 1000);
+
+    return () => clearInterval(intervalId);
+  }, [trades, assetId, mode]); 
 
   // High-Frequency Price update effect
   useEffect(() => {

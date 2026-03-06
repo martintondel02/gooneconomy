@@ -110,4 +110,13 @@ export class ShadowMarketMaker {
   public clearEvents(assetId: string) {
     this.activeEvents.delete(assetId);
   }
+
+  public async hardReset() {
+    this.momentums.clear();
+    this.activeEvents.clear();
+    if (redisClient.isOpen) {
+      await redisClient.del('market:momentums');
+      await redisClient.del('market:prices');
+    }
+  }
 }

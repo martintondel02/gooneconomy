@@ -84,4 +84,9 @@ export class CandleStore {
 
     return current ? [...history, current] : history;
   }
+
+  public clearAll() {
+    this.history.clear();
+    this.current.clear();
+  }
 }

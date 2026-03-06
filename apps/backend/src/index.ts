@@ -182,6 +182,10 @@ app.post('/admin/economy/reset', async (req, res) => {
     }
 
     await engine.syncFromDb();
+    candleStore.clearAll();
+    engine.clearRecentTrades();
+    await shadowMarketMaker.hardReset();
+
     res.json({ success: true });
   } catch (e: any) {
     res.status(500).json({ error: e.message });

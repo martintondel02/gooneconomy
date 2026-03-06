@@ -111,6 +111,10 @@ export class MatchingEngine {
     return this.recentTrades.filter(t => t.assetId === assetId).slice(-limit);
   }
 
+  public clearRecentTrades() {
+    this.recentTrades = [];
+  }
+
   public updatePrice(assetId: string, newPrice: number) {
     const asset = this.assets.get(assetId);
     if (asset) {
