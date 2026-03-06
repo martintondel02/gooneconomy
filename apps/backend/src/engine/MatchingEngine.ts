@@ -15,8 +15,20 @@ export interface AssetData {
   manualBias: number;
 }
 
+export interface LiveTrade {
+  id: string;
+  assetId: string;
+  userId: string;
+  username: string;
+  type: TradeType;
+  price: number;
+  quantity: number;
+  timestamp: number;
+}
+
 export class MatchingEngine {
   private assets: Map<string, AssetData> = new Map();
+  private recentTrades: LiveTrade[] = [];
 
   constructor() {}
 
@@ -24,7 +36,6 @@ export class MatchingEngine {
     const dbAssets = await prisma.asset.findMany();
     
     for (const a of dbAssets) {
-      // Try to recover high-frequency price from Redis first
       let activePrice = a.currentPrice;
       try {
         const cachedPrice = await redisClient.hGet('market:prices', a.id);
@@ -68,9 +79,8 @@ export class MatchingEngine {
     const bids = [];
     const asks = [];
 
-    // Realistic-ish depth generation
     for (let i = 1; i <= 15; i++) {
-      const spread = 0.0002 * i; // Tight spread
+      const spread = 0.0002 * i; 
       bids.push({
         price: price * (1 - spread),
         quantity: (Math.random() * 10 + 5) / (i * 0.5),
@@ -90,17 +100,15 @@ export class MatchingEngine {
     };
   }
 
-  public placeMarketOrder(userId: string, assetId: string, type: TradeType, quantity: number): { executedPrice: number; quantity: number } {
-    const asset = this.assets.get(assetId);
-    if (!asset) throw new Error("Asset not found");
+  public recordTrade(trade: LiveTrade) {
+    this.recentTrades.push(trade);
+    if (this.recentTrades.length > 200) {
+      this.recentTrades.shift(); // Keep last 200 trades globally in memory
+    }
+  }
 
-    const impactFactor = 0.00002; // Institutional grade low impact
-    const slippage = type === 'BUY' ? 1 + (quantity * impactFactor) : 1 - (quantity * impactFactor);
-    const executedPrice = asset.currentPrice * slippage;
-
-    asset.currentPrice = executedPrice;
-    
-    return { executedPrice, quantity };
+  public getRecentTrades(assetId: string, limit: number = 20): LiveTrade[] {
+    return this.recentTrades.filter(t => t.assetId === assetId).slice(-limit);
   }
 
   public updatePrice(assetId: string, newPrice: number) {
@@ -110,7 +118,6 @@ export class MatchingEngine {
     }
   }
 
-  // Fallback persistent sync for database
   public async persistPrices() {
     for (const asset of this.assets.values()) {
       await prisma.asset.update({

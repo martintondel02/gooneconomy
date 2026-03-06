@@ -7,7 +7,7 @@ import multer from 'multer';
 import fs from 'fs';
 import path from 'path';
 import { PrismaClient } from '@prisma/client';
-import { MatchingEngine } from './engine/MatchingEngine.js';
+import { MatchingEngine, LiveTrade } from './engine/MatchingEngine.js';
 import { ShadowMarketMaker } from './engine/ShadowMarketMaker.js';
 import { CandleStore } from './store/CandleStore.js';
 import { PositionManager, PositionSide } from './manager/PositionManager.js';
@@ -98,7 +98,7 @@ app.use(express.json());
 app.use('/uploads', express.static(uploadDir));
 
 app.get('/health', (req, res) => {
-  res.json({ status: 'ok', version: '0.7.0', timestamp: Date.now() });
+  res.json({ status: 'ok', version: '0.9.1', timestamp: Date.now() });
 });
 
 // Auth Routes
@@ -270,14 +270,54 @@ app.get('/candles/:assetId', (req, res) => {
 
 app.post('/trade/open', async (req, res) => {
   const { userId, assetId, side, margin, leverage } = req.body;
+  const user = await leaderboard.getUser(userId);
+  
+  if (!user) return res.status(404).json({ error: 'User not found' });
+  
   const position = await posManager.openPosition(userId, assetId, side as PositionSide, margin, leverage);
+  
+  // Record trade in memory for live global chart markers
+  const currentPrice = engine.getCurrentPrice(assetId);
+  const trade: LiveTrade = {
+    id: Math.random().toString(36).substring(2, 9),
+    assetId,
+    userId,
+    username: user.username,
+    type: side === 'LONG' ? 'BUY' : 'SELL',
+    price: currentPrice,
+    quantity: (margin * leverage) / currentPrice,
+    timestamp: Date.now()
+  };
+  engine.recordTrade(trade);
+
   res.json(position);
 });
 
 app.post('/trade/close', async (req, res) => {
   const { positionId } = req.body;
+  
+  // Fetch position to get details before it's marked inactive
+  const posRecord = await prisma.position.findUnique({ where: { id: positionId } });
+  if (!posRecord) return res.status(404).json({ error: 'Position not found' });
+
+  const user = await leaderboard.getUser(posRecord.userId);
   const result = await posManager.closePosition(positionId);
+  
   if (!result) return res.status(404).json({ error: 'Position not found' });
+
+  // Record trade in memory for live global chart markers
+  const trade: LiveTrade = {
+    id: Math.random().toString(36).substring(2, 9),
+    assetId: posRecord.assetId,
+    userId: posRecord.userId,
+    username: user?.username || 'Unknown',
+    type: posRecord.side === 'LONG' ? 'SELL' : 'BUY', // Closing a long is a sell
+    price: engine.getCurrentPrice(posRecord.assetId),
+    quantity: posRecord.quantity,
+    timestamp: Date.now()
+  };
+  engine.recordTrade(trade);
+
   res.json(result);
 });
 
@@ -320,6 +360,7 @@ setInterval(async () => {
     const currentPrices: Record<string, number> = {};
     const currentMarketCaps: Record<string, number> = {};
     const orderbooks: Record<string, any> = {};
+    const recentTrades: Record<string, LiveTrade[]> = {};
 
     const assets = engine.getAssets();
     assets.forEach(asset => {
@@ -329,6 +370,7 @@ setInterval(async () => {
       currentPrices[asset.ticker] = price;
       currentMarketCaps[asset.ticker] = marketCap;
       orderbooks[asset.id] = engine.getOrderBook(asset.id);
+      recentTrades[asset.id] = engine.getRecentTrades(asset.id);
     });
     
     const liquidations = await posManager.checkLiquidations();
@@ -348,6 +390,7 @@ setInterval(async () => {
     io.emit('market:prices', currentPrices);
     io.emit('market:caps', currentMarketCaps);
     io.emit('market:orderbooks', orderbooks);
+    io.emit('market:recent_trades', recentTrades);
     io.emit('user:positions', activePositionsWithPnL);
     io.emit('market:leaderboard', lbData);
     

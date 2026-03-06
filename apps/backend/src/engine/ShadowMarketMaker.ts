@@ -1,4 +1,4 @@
-import { MatchingEngine } from './MatchingEngine.js';
+import { MatchingEngine, LiveTrade } from './MatchingEngine.js';
 import { redisClient } from '../store/RedisManager.js';
 
 interface MarketEvent {
@@ -16,7 +16,6 @@ export class ShadowMarketMaker {
     this.engine = engine;
   }
 
-  // Load saved momentums from Redis to prevent flatlines on restart
   public async recoverState() {
     try {
       const savedMomentums = await redisClient.hGetAll('market:momentums');
@@ -27,7 +26,7 @@ export class ShadowMarketMaker {
       console.log('ShadowMarketMaker state recovered from Redis');
     } catch (e) {
       console.warn('Failed to recover MarketMaker state from Redis');
-      this.isRecovered = true; // Proceed anyway
+      this.isRecovered = true; 
     }
   }
 
@@ -37,7 +36,6 @@ export class ShadowMarketMaker {
     const assets = this.engine.getAssets();
     const now = Date.now();
     
-    // Batch redis updates
     const priceUpdates: Record<string, string> = {};
     const momentumUpdates: Record<string, string> = {};
 
@@ -76,9 +74,26 @@ export class ShadowMarketMaker {
         priceUpdates[asset.id] = '0.01';
         momentumUpdates[asset.id] = '0';
       }
+
+      // Randomly inject a bot trade (5% chance per tick per asset)
+      if (Math.random() > 0.95) {
+         const type = Math.random() > 0.5 ? 'BUY' : 'SELL';
+         const quantity = Math.random() * (100 / newPrice);
+         
+         const botTrade: LiveTrade = {
+            id: Math.random().toString(36).substring(2, 9),
+            assetId: asset.id,
+            userId: 'SYSTEM_BOT',
+            username: 'Shadow_Node',
+            type,
+            price: newPrice,
+            quantity,
+            timestamp: Date.now()
+         };
+         this.engine.recordTrade(botTrade);
+      }
     });
 
-    // Fire and forget Redis updates for high-frequency persistence
     if (redisClient.isOpen && Object.keys(priceUpdates).length > 0) {
       redisClient.hSet('market:prices', priceUpdates).catch(e => console.error('Redis Price Sync Error', e));
       redisClient.hSet('market:momentums', momentumUpdates).catch(e => console.error('Redis Momentum Sync Error', e));

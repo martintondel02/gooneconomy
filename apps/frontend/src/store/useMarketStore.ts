@@ -6,6 +6,7 @@ interface MarketState {
   prices: Record<string, number>;
   marketCaps: Record<string, number>;
   orderbooks: Record<string, any>;
+  recentTrades: Record<string, any[]>;
   assets: any[];
   positions: any[];
   trades: any[];
@@ -51,6 +52,7 @@ export const useMarketStore = create<MarketState>((set, get) => ({
   prices: {},
   marketCaps: {},
   orderbooks: {},
+  recentTrades: {},
   assets: [],
   positions: [],
   trades: [],
@@ -83,6 +85,7 @@ export const useMarketStore = create<MarketState>((set, get) => ({
     socket.on('market:prices', (prices: Record<string, number>) => set({ prices }));
     socket.on('market:caps', (marketCaps: Record<string, number>) => set({ marketCaps }));
     socket.on('market:orderbooks', (orderbooks: Record<string, any>) => set({ orderbooks }));
+    socket.on('market:recent_trades', (recentTrades: Record<string, any[]>) => set({ recentTrades }));
     
     socket.on('market:liquidations', (liquidations: any[]) => {
       const { user } = get();
