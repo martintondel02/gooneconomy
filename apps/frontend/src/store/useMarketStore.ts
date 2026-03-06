@@ -4,6 +4,8 @@ import { io, Socket } from 'socket.io-client';
 interface MarketState {
   prices: Record<string, number>;
   marketCaps: Record<string, number>;
+  orderbooks: Record<string, any>;
+  recentTrades: Record<string, any[]>;
   assets: any[];
   positions: any[];
   leaderboard: any[];
@@ -30,6 +32,8 @@ interface MarketState {
 export const useMarketStore = create<MarketState>((set, get) => ({
   prices: {},
   marketCaps: {},
+  orderbooks: {},
+  recentTrades: {},
   assets: [],
   positions: [],
   leaderboard: [],
@@ -57,6 +61,9 @@ export const useMarketStore = create<MarketState>((set, get) => ({
 
     socket.on('market:prices', (prices: Record<string, number>) => set({ prices }));
     socket.on('market:caps', (marketCaps: Record<string, number>) => set({ marketCaps }));
+    socket.on('market:orderbooks', (orderbooks: Record<string, any>) => set({ orderbooks }));
+    socket.on('market:recent_trades', (recentTrades: Record<string, any[]>) => set({ recentTrades }));
+    
     socket.on('user:positions', (positions: any[]) => {
       const { user } = get();
       if (user) {
@@ -65,6 +72,11 @@ export const useMarketStore = create<MarketState>((set, get) => ({
       }
     });
     socket.on('market:leaderboard', (leaderboard: any[]) => set({ leaderboard }));
+    
+    socket.on('user:data', (freshUser: any) => {
+      set({ user: freshUser });
+      localStorage.setItem('goon_user', JSON.stringify(freshUser));
+    });
 
     // Fetch initial assets
     fetch(`${apiUrl}/assets`)
@@ -75,7 +87,6 @@ export const useMarketStore = create<MarketState>((set, get) => ({
 
     set({ socket });
 
-    // If we have a token but no user, fetch user
     const { token, user } = get();
     if (token && !user) {
       get().fetchUser();
@@ -95,15 +106,11 @@ export const useMarketStore = create<MarketState>((set, get) => ({
     if (!token) return;
 
     try {
-      // For now, we decode userId from JWT or have a /me endpoint
-      // Let's assume the token is the userId for simplicity in v0.0.1 or we'd need a /me
-      // Actually, let's just store user object in localStorage for now to keep it simple
       const storedUser = localStorage.getItem('goon_user');
       if (storedUser) {
         const user = JSON.parse(storedUser);
         set({ user });
         
-        // Refresh user data from server
         const host = window.location.hostname;
         const apiUrl = `http://${host}:28081`;
         const res = await fetch(`${apiUrl}/user/${user.id}`);
@@ -190,7 +197,7 @@ export const useMarketStore = create<MarketState>((set, get) => ({
         leverage
       })
     });
-    get().fetchUser(); // Refresh balance
+    get().fetchUser();
   },
 
   closePosition: async (positionId: string) => {
@@ -201,7 +208,7 @@ export const useMarketStore = create<MarketState>((set, get) => ({
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ positionId })
     });
-    get().fetchUser(); // Refresh balance
+    get().fetchUser();
   },
 
   claimStimulus: async () => {
@@ -220,7 +227,7 @@ export const useMarketStore = create<MarketState>((set, get) => ({
       const hours = Math.floor(result.nextClaimIn / (60 * 60 * 1000));
       alert(`Stimulus available in ${hours} hours.`);
     } else {
-      get().fetchUser(); // Refresh balance
+      get().fetchUser();
     }
   }
 }));

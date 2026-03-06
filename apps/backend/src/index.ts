@@ -59,7 +59,7 @@ app.use(cors());
 app.use(express.json());
 
 app.get('/health', (req, res) => {
-  res.json({ status: 'ok', version: '0.0.1', timestamp: Date.now() });
+  res.json({ status: 'ok', version: '0.2.0', timestamp: Date.now() });
 });
 
 // Auth Routes
@@ -128,6 +128,8 @@ setInterval(async () => {
 
     const currentPrices: Record<string, number> = {};
     const currentMarketCaps: Record<string, number> = {};
+    const orderBooks: Record<string, any> = {};
+    const recentTrades: Record<string, any> = {};
 
     initialAssets.forEach(asset => {
       const currentPrice = engine.getCurrentPrice(asset.id);
@@ -136,6 +138,10 @@ setInterval(async () => {
       currentPrices[asset.ticker] = currentPrice;
       currentMarketCaps[asset.ticker] = marketCap;
       candleStore.update(asset.id, marketCap);
+      
+      // Get orderbook and recent trades
+      orderBooks[asset.id] = engine.getOrderBook(asset.id);
+      recentTrades[asset.id] = engine.getRecentTrades(asset.id, 15);
     });
     
     // Check liquidations
@@ -159,6 +165,8 @@ setInterval(async () => {
     io.emit('market:caps', currentMarketCaps);
     io.emit('user:positions', activePositionsWithPnL);
     io.emit('market:leaderboard', lbData);
+    io.emit('market:orderbooks', orderBooks);
+    io.emit('market:recent_trades', recentTrades);
     
     // Individual user data updates
     const connectedUserIds = Array.from(io.sockets.adapter.rooms.keys())
