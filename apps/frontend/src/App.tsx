@@ -1,5 +1,5 @@
-import React, { useEffect } from 'react';
-import { Wallet, ShoppingBag, Settings, TrendingUp, LogOut, BarChart3, Users, ShieldAlert } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { Wallet, ShoppingBag, Settings, LogOut, BarChart3, ShieldAlert, ChevronRight } from 'lucide-react';
 import { useMarketStore } from './store/useMarketStore';
 import { Toaster } from 'react-hot-toast';
 import TradingView from './views/TradingView';
@@ -10,7 +10,6 @@ import AuthView from './views/AuthView';
 
 function App() {
   const { 
-    prices, 
     leaderboard,
     user,
     token,
@@ -45,130 +44,132 @@ function App() {
   };
 
   return (
-    <div className="flex flex-col h-screen w-screen bg-[#0D0E12] text-[#F0F2F5] overflow-hidden font-sans">
-      <Toaster 
-        position="bottom-right"
-        toastOptions={{
-          style: {
-            background: '#1C1E26',
-            color: '#F0F2F5',
-            border: '1px solid rgba(255, 255, 255, 0.05)',
-            fontSize: '11px',
-            fontFamily: 'Inter',
-            fontWeight: 600,
-            letterSpacing: '0.05em',
-            textTransform: 'uppercase'
-          }
-        }}
-      />
+    <div className="flex h-screen w-screen bg-[#08090D] text-[#F0F2F5] overflow-hidden font-sans">
+      <Toaster position="bottom-right" />
       
-      <div className="flex flex-1 min-h-0 overflow-hidden relative">
-        {/* Sleek Rail Sidebar - INTEGRATED LABELS */}
-        <aside className="w-[60px] flex-shrink-0 border-r border-white/[0.04] flex flex-col items-center py-6 gap-8 bg-[#0D0E12] z-[100]">
-          <div className="mb-2">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#3E7BFA] to-[#00FF94] flex items-center justify-center shadow-lg shadow-black/20 group cursor-pointer active:scale-95 transition-all">
-              <span className="font-black italic text-[#0D0E12] text-lg">G</span>
-            </div>
+      {/* NEW ROBUST SIDEBAR */}
+      <aside className="w-[64px] h-full flex-shrink-0 bg-[#0D0E12] border-r border-white/[0.04] flex flex-col items-center py-6 z-[200]">
+        
+        {/* Brand Logo */}
+        <div className="mb-10">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#3E7BFA] to-[#00FF94] flex items-center justify-center shadow-lg shadow-black/40 cursor-default">
+            <span className="font-black italic text-[#0D0E12] text-xl">G</span>
           </div>
-          
-          <div className="flex flex-col gap-4">
-            <NavIcon 
-              active={activeTab === 'TRADING'} 
-              icon={<BarChart3 size={20} />} 
-              onClick={() => setActiveTab('TRADING')} 
-              label="Trade"
+        </div>
+
+        {/* Primary Navigation */}
+        <nav className="flex flex-col gap-4 w-full px-2">
+          <SidebarItem 
+            icon={<BarChart3 size={22} />} 
+            label="Terminal" 
+            active={activeTab === 'TRADING'} 
+            onClick={() => setActiveTab('TRADING')} 
+          />
+          <SidebarItem 
+            icon={<Wallet size={22} />} 
+            label="Vault" 
+            active={activeTab === 'PORTFOLIO'} 
+            onClick={() => setActiveTab('PORTFOLIO')} 
+          />
+          <SidebarItem 
+            icon={<ShoppingBag size={22} />} 
+            label="Shop" 
+            active={activeTab === 'SHOP'} 
+            onClick={() => setActiveTab('SHOP')} 
+          />
+          {user.isAdmin && (
+            <SidebarItem 
+              icon={<ShieldAlert size={22} />} 
+              label="Control" 
+              active={activeTab === 'ADMIN'} 
+              onClick={() => setActiveTab('ADMIN')} 
+              accentColor="#00A3FF"
             />
-            <NavIcon 
-              active={activeTab === 'PORTFOLIO'} 
-              icon={<Wallet size={20} />} 
-              onClick={() => setActiveTab('PORTFOLIO')} 
-              label="Assets"
+          )}
+        </nav>
+
+        {/* Footer Actions */}
+        <div className="mt-auto flex flex-col gap-4 w-full px-2">
+          <div className="py-4 flex justify-center">
+             <span className="text-[8px] font-black text-white/10 uppercase -rotate-90 origin-center whitespace-nowrap tracking-widest">v0.6.5</span>
+          </div>
+          <SidebarItem 
+            icon={<Settings size={22} />} 
+            label="Settings" 
+            onClick={() => {}} 
+          />
+          <SidebarItem 
+            icon={<LogOut size={22} />} 
+            label="Logout" 
+            onClick={() => logout()} 
+            isDestructive
+          />
+        </div>
+      </aside>
+
+      {/* Main Content Area */}
+      <div className="flex-1 flex flex-col min-w-0 relative h-full">
+        <header className="h-[52px] flex-shrink-0 border-b border-white/[0.04] flex items-center px-6 justify-between bg-[#0D0E12]/80 backdrop-blur-xl z-40">
+          <div className="flex items-center gap-10">
+            <StatItem label="Total Equity" value={`$${netWorth.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} />
+            <div className="w-px h-6 bg-white/[0.04]"></div>
+            <StatItem label="Available" value={`$${user?.cashBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} />
+            <div className="w-px h-6 bg-white/[0.04]"></div>
+            <StatItem 
+              label="Unrealized PnL" 
+              value={`${unrealizedPnL >= 0 ? '+' : ''}${unrealizedPnL.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} 
+              isPnL={true} 
+              positive={unrealizedPnL >= 0} 
             />
-            <NavIcon 
-              active={activeTab === 'SHOP'} 
-              icon={<ShoppingBag size={20} />} 
-              onClick={() => setActiveTab('SHOP')} 
-              label="Shop"
-            />
-            {user.isAdmin && (
-              <NavIcon 
-                active={activeTab === 'ADMIN'} 
-                icon={<ShieldAlert size={20} />} 
-                onClick={() => setActiveTab('ADMIN')} 
-                label="Admin"
-                color="#00A3FF"
-              />
-            )}
           </div>
 
-          <div className="mt-auto flex flex-col items-center gap-6 pb-2">
-            <div className="group relative">
-              <span className="text-[8px] font-bold text-white/10 uppercase -rotate-90 origin-center whitespace-nowrap tracking-[0.2em]">v0.6.3</span>
-            </div>
-            
-            <div className="flex flex-col gap-4 items-center">
-              <div onClick={() => logout()} className="p-2 cursor-pointer text-white/20 hover:text-bear transition-all group active:scale-90 relative">
-                <LogOut size={20} />
-                <span className="absolute left-[50px] top-1/2 -translate-y-1/2 px-2 py-1 bg-[#1C1E26] border border-white/[0.05] rounded text-[9px] font-bold text-white/60 uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity z-[110] pointer-events-none whitespace-nowrap shadow-2xl">Disconnect</span>
-              </div>
-              <div className="p-2 cursor-pointer text-white/20 hover:text-white/60 transition-all active:scale-90 group relative">
-                <Settings size={20} />
-                <span className="absolute left-[50px] top-1/2 -translate-y-1/2 px-2 py-1 bg-[#1C1E26] border border-white/[0.05] rounded text-[9px] font-bold text-white/60 uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity z-[110] pointer-events-none whitespace-nowrap">Settings</span>
-              </div>
-            </div>
+          <div className="flex flex-col items-end">
+            <span className="pro-label !text-[8px] opacity-40">Network Identity</span>
+            <span className="text-[11px] font-bold text-bull tracking-tight uppercase">RANK #{leaderboard.find(l => l.username === user?.username)?.rank || '---'}</span>
           </div>
-        </aside>
+        </header>
 
-        <main className="flex-1 flex flex-col min-w-0 overflow-hidden relative z-10">
-          {/* Institutional Header */}
-          <header className="h-[52px] flex-shrink-0 border-b border-white/[0.04] flex items-center px-6 justify-between bg-white/[0.01] backdrop-blur-xl z-40">
-            <div className="flex items-center gap-10">
-              <StatItem label="Total Equity" value={`$${netWorth.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} isPnL={false} />
-              <div className="w-px h-6 bg-white/[0.04]"></div>
-              <StatItem label="Available" value={`$${user?.cashBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} isPnL={false} />
-              <div className="w-px h-6 bg-white/[0.04]"></div>
-              <StatItem 
-                label="Unrealized PnL" 
-                value={`${unrealizedPnL >= 0 ? '+' : ''}${unrealizedPnL.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} 
-                isPnL={true} 
-                positive={unrealizedPnL >= 0} 
-              />
-            </div>
-
-            <div className="flex items-center gap-6">
-              <div className="flex flex-col items-end">
-                <span className="pro-label !text-[8px] opacity-40">Node Standing</span>
-                <span className="text-[11px] font-bold text-bull tracking-tight">RANK #{leaderboard.find(l => l.username === user?.username)?.rank || '---'}</span>
-              </div>
-            </div>
-          </header>
-
-          <div className="flex-1 flex min-h-0 overflow-hidden">
-            {renderView()}
-          </div>
+        <main className="flex-1 flex min-h-0 relative">
+          {renderView()}
         </main>
       </div>
     </div>
   );
 }
 
-const NavIcon = ({ active, icon, onClick, label, color }: any) => (
-  <div className="group relative flex flex-col items-center">
-    <div 
-      onClick={onClick}
-      className={`p-3 cursor-pointer rounded-xl transition-all relative z-20 ${active ? 'bg-white/5' : 'text-white/20 hover:bg-white/[0.03] hover:text-white/40'}`}
-      style={active ? { color: color || '#FFFFFF' } : {}}
-    >
-      {icon}
-      {active && <div className="absolute left-[-18px] top-1/4 w-[3px] h-1/2 bg-white rounded-r-full" style={{backgroundColor: color || '#FFFFFF', boxShadow: `0 0 15px ${color || '#FFFFFF'}`}}></div>}
+const SidebarItem = ({ icon, label, active, onClick, accentColor, isDestructive }: any) => {
+  return (
+    <div className="relative group w-full flex justify-center">
+      <button
+        onClick={onClick}
+        className={`
+          w-12 h-12 rounded-xl flex items-center justify-center transition-all duration-200 relative
+          ${active 
+            ? 'bg-white/[0.06] text-white shadow-inner' 
+            : `text-white/20 hover:bg-white/[0.03] ${isDestructive ? 'hover:text-bear' : 'hover:text-white/60'}`
+          }
+        `}
+        style={active && accentColor ? { color: accentColor } : {}}
+      >
+        {icon}
+        {active && (
+          <div 
+            className="absolute left-[-10px] top-1/4 w-[3px] h-1/2 bg-white rounded-r-full shadow-[0_0_15px_rgba(255,255,255,0.5)]"
+            style={accentColor ? { backgroundColor: accentColor, boxShadow: `0 0 15px ${accentColor}` } : {}}
+          ></div>
+        )}
+      </button>
+
+      {/* Floating Label / Tooltip */}
+      <div className="absolute left-[64px] top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 pointer-events-none transition-all duration-200 z-[300]">
+        <div className="bg-[#1C1E26] border border-white/[0.08] px-3 py-1.5 rounded-lg shadow-2xl flex items-center gap-2">
+          <span className="text-[10px] font-bold text-white uppercase tracking-widest whitespace-nowrap">{label}</span>
+          <ChevronRight size={10} className="text-white/20" />
+        </div>
+      </div>
     </div>
-    
-    {/* RE-POSITIONED TOOLTIP TO PREVENT OVERLAP */}
-    <span className="absolute left-[50px] top-1/2 -translate-y-1/2 px-2 py-1.5 bg-[#1C1E26] border border-white/[0.05] rounded-md text-[9px] font-bold text-white/80 uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-all z-[110] pointer-events-none whitespace-nowrap shadow-2xl">
-      {label}
-    </span>
-  </div>
-);
+  );
+};
 
 const StatItem = ({ label, value, isPnL, positive }: any) => (
   <div className="flex flex-col gap-0.5">
