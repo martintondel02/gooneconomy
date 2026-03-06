@@ -3,6 +3,7 @@ import { createServer } from 'http';
 import { Server } from 'socket.io';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import { PrismaClient } from '@prisma/client';
 import { MatchingEngine } from './engine/MatchingEngine.js';
 import { ShadowMarketMaker } from './engine/ShadowMarketMaker.js';
 import { CandleStore } from './store/CandleStore.js';
@@ -12,6 +13,7 @@ import { AuthManager } from './manager/AuthManager.js';
 
 dotenv.config();
 
+const prisma = new PrismaClient();
 const app = express();
 const httpServer = createServer(app);
 const io = new Server(httpServer, {
@@ -29,37 +31,53 @@ const candleStore = new CandleStore();
 const posManager = new PositionManager(engine);
 const leaderboard = new LeaderboardManager(posManager);
 const authManager = new AuthManager();
+const shadowMarketMaker = new ShadowMarketMaker(engine);
 
 const initialAssets = [
-  { id: '1', ticker: 'GOON', name: 'GoonCoin', type: 'CRYPTO', price: 142.32, supply: 1000000 },
-  { id: '2', ticker: 'BTC', name: 'Bitcoin', type: 'CRYPTO', price: 64231.50, supply: 21000000 },
-  { id: '3', ticker: 'ETH', name: 'Ethereum', type: 'CRYPTO', price: 3451.20, supply: 120000000 },
-  { id: '4', ticker: 'PUMPKIN', name: 'PumpkinCoin', type: 'CRYPTO', price: 0.042, supply: 1000000000 },
-  { id: '5', ticker: 'MOSSAD', name: 'MossadCoin', type: 'CRYPTO', price: 1.00, supply: 10000000 },
-  { id: '6', ticker: 'NVDA', name: 'Nvidia', type: 'STOCK', price: 892.12, supply: 2500000000 },
-  { id: '7', ticker: 'ORCL', name: 'Oracle', type: 'STOCK', price: 125.40, supply: 2700000000 },
-  { id: '8', ticker: 'AAPL', name: 'Apple', type: 'STOCK', price: 172.10, supply: 15000000000 },
-  { id: '9', ticker: 'TSLA', name: 'Tesla', type: 'STOCK', price: 165.30, supply: 3000000000 },
-  { id: '10', ticker: 'PLTR', name: 'Palantir', type: 'STOCK', price: 24.15, supply: 2200000000 },
-  { id: '11', ticker: 'GOLD', name: 'Gold', type: 'COMMODITY', price: 2145.00, supply: 100000000 },
+  { ticker: 'GOON', name: 'GoonCoin', type: 'CRYPTO' as const, price: 142.32, supply: 1000000, vol: 5.0 },
+  { ticker: 'BTC', name: 'Bitcoin', type: 'CRYPTO' as const, price: 64231.50, supply: 21000000, vol: 1.0 },
+  { ticker: 'ETH', name: 'Ethereum', type: 'CRYPTO' as const, price: 3451.20, supply: 120000000, vol: 1.2 },
+  { ticker: 'PUMPKIN', name: 'PumpkinCoin', type: 'CRYPTO' as const, price: 0.042, supply: 1000000000, vol: 8.0 },
+  { ticker: 'MOSSAD', name: 'MossadCoin', type: 'CRYPTO' as const, price: 1.00, supply: 10000000, vol: 10.0 },
+  { ticker: 'NVDA', name: 'Nvidia', type: 'STOCK' as const, price: 892.12, supply: 2500000000, vol: 1.5 },
+  { ticker: 'ORCL', name: 'Oracle', type: 'STOCK' as const, price: 125.40, supply: 2700000000, vol: 0.8 },
+  { ticker: 'AAPL', name: 'Apple', type: 'STOCK' as const, price: 172.10, supply: 15000000000, vol: 0.7 },
+  { ticker: 'TSLA', name: 'Tesla', type: 'STOCK' as const, price: 165.30, supply: 3000000000, vol: 2.0 },
+  { ticker: 'PLTR', name: 'Palantir', type: 'STOCK' as const, price: 24.15, supply: 2200000000, vol: 2.5 },
+  { ticker: 'GOLD', name: 'Gold', type: 'COMMODITY' as const, price: 2145.00, supply: 100000000, vol: 0.4 },
 ];
 
-initialAssets.forEach(asset => {
-  engine.initAsset(asset.id, asset.ticker, asset.price);
-});
+async function initializeServer() {
+  console.log('Initializing GoonEconomy Server...');
+  
+  for (const a of initialAssets) {
+    await prisma.asset.upsert({
+      where: { ticker: a.ticker },
+      update: {},
+      create: {
+        ticker: a.ticker,
+        name: a.name,
+        type: a.type,
+        currentPrice: a.price,
+        totalSupply: a.supply,
+        volatility: a.vol
+      }
+    });
+  }
 
-const assetConfigs = initialAssets.map(a => ({
-  id: a.id,
-  volatility: a.ticker === 'GOON' ? 5 : (a.ticker === 'MOSSAD' || a.ticker === 'PUMPKIN' ? 10 : 1)
-}));
+  await engine.syncFromDb();
+  console.log('Engine synced with database.');
 
-const shadowMarketMaker = new ShadowMarketMaker(engine, assetConfigs);
+  httpServer.listen(port, () => {
+    console.log(`GoonEconomy Backend listening on port ${port}`);
+  });
+}
 
 app.use(cors());
 app.use(express.json());
 
 app.get('/health', (req, res) => {
-  res.json({ status: 'ok', version: '0.0.1', timestamp: Date.now() });
+  res.json({ status: 'ok', version: '0.4.0', timestamp: Date.now() });
 });
 
 // Auth Routes
@@ -77,12 +95,34 @@ app.post('/auth/login', async (req, res) => {
   res.json(result);
 });
 
-app.get('/assets', (req, res) => {
-  const assets = initialAssets.map(asset => ({
-    ...asset,
-    currentPrice: engine.getCurrentPrice(asset.id)
-  }));
+// Admin Routes
+app.get('/admin/assets', async (req, res) => {
+  const assets = await prisma.asset.findMany();
   res.json(assets);
+});
+
+app.post('/admin/assets/add', async (req, res) => {
+  const asset = await prisma.asset.create({ data: req.body });
+  await engine.syncFromDb();
+  res.json(asset);
+});
+
+app.post('/admin/assets/edit', async (req, res) => {
+  const { id, ...data } = req.body;
+  const asset = await prisma.asset.update({ where: { id }, data });
+  await engine.syncFromDb();
+  res.json(asset);
+});
+
+app.post('/admin/market/bias', async (req, res) => {
+  const { assetId, bias } = req.body;
+  await prisma.asset.update({ where: { id: assetId }, data: { manualBias: bias } });
+  await engine.syncFromDb();
+  res.json({ success: true });
+});
+
+app.get('/assets', (req, res) => {
+  res.json(engine.getAssets());
 });
 
 app.get('/candles/:assetId', (req, res) => {
@@ -115,27 +155,45 @@ app.get('/user/:userId', async (req, res) => {
   res.json(user);
 });
 
-app.post('/user/claim-stimulus', async (req, res) => {
-  const { userId } = req.body;
-  const result = await leaderboard.claimStimulus(userId);
-  res.json(result);
+app.get('/user/trades/:userId', async (req, res) => {
+  const trades = await prisma.trade.findMany({
+    where: { userId: req.params.userId },
+    orderBy: { timestamp: 'desc' },
+    take: 50
+  });
+  res.json(trades);
 });
 
-// Real-time price and candle update loop
+// HIGH-FREQUENCY MARKET ENGINE LOOP (100ms)
 setInterval(async () => {
   try {
     shadowMarketMaker.tick();
 
+    const assets = engine.getAssets();
+    assets.forEach(asset => {
+      // Update candle store every 100ms for high-precision OHLC
+      candleStore.update(asset.id, asset.currentPrice);
+    });
+  } catch (err) {
+    console.error('Error in shadow market maker tick:', err);
+  }
+}, 100);
+
+// REAL-TIME DATA EMISSION LOOP (1000ms)
+setInterval(async () => {
+  try {
     const currentPrices: Record<string, number> = {};
     const currentMarketCaps: Record<string, number> = {};
+    const orderbooks: Record<string, any> = {};
 
-    initialAssets.forEach(asset => {
-      const currentPrice = engine.getCurrentPrice(asset.id);
-      const marketCap = currentPrice * (asset as any).supply;
+    const assets = engine.getAssets();
+    assets.forEach(asset => {
+      const price = asset.currentPrice;
+      const marketCap = price * asset.totalSupply;
       
-      currentPrices[asset.ticker] = currentPrice;
+      currentPrices[asset.ticker] = price;
       currentMarketCaps[asset.ticker] = marketCap;
-      candleStore.update(asset.id, marketCap);
+      orderbooks[asset.id] = engine.getOrderBook(asset.id);
     });
     
     // Check liquidations
@@ -157,6 +215,7 @@ setInterval(async () => {
 
     io.emit('market:prices', currentPrices);
     io.emit('market:caps', currentMarketCaps);
+    io.emit('market:orderbooks', orderbooks);
     io.emit('user:positions', activePositionsWithPnL);
     io.emit('market:leaderboard', lbData);
     
@@ -172,9 +231,18 @@ setInterval(async () => {
       }
     }
   } catch (err) {
-    console.error('Error in market update loop:', err);
+    console.error('Error in market emission loop:', err);
   }
 }, 1000);
+
+// Periodic persistence loop (every 30s)
+setInterval(async () => {
+  try {
+    await engine.persistPrices();
+  } catch (err) {
+    console.error('Price persistence failed:', err);
+  }
+}, 30000);
 
 io.on('connection', (socket) => {
   console.log('Client connected:', socket.id);
@@ -188,6 +256,4 @@ io.on('connection', (socket) => {
   });
 });
 
-httpServer.listen(port, () => {
-  console.log(`GoonEconomy Backend listening on port ${port}`);
-});
+initializeServer();

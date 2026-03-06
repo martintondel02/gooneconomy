@@ -13,7 +13,7 @@ export class AuthManager {
         data: {
           username,
           password: hashedPassword,
-          cashBalance: 1000.0, // Starting balance
+          cashBalance: 100.0, // Updated starting balance to $100
         }
       });
       const token = this.generateToken(user.id);

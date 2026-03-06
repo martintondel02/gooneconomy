@@ -69,38 +69,4 @@ export class LeaderboardManager {
       data: { cashBalance: { increment: amount } }
     });
   }
-
-  public async claimStimulus(userId: string): Promise<{ success: boolean; amount: number; nextClaimIn?: number }> {
-    const user = await this.getUser(userId);
-    if (!user) return { success: false, amount: 0 };
-
-    const now = new Date();
-    const lastClaim = user.lastStimulusClaim ? new Date(user.lastStimulusClaim) : new Date(0);
-    const cooldown = 24 * 60 * 60 * 1000; // 24 hours
-
-    if (now.getTime() - lastClaim.getTime() < cooldown) {
-      return { 
-        success: false, 
-        amount: 0, 
-        nextClaimIn: cooldown - (now.getTime() - lastClaim.getTime()) 
-      };
-    }
-
-    const stimulusAmount = 100;
-    
-    if (userId.startsWith('mock-')) {
-      user.cashBalance += stimulusAmount;
-      user.lastStimulusClaim = now.getTime();
-    } else {
-      await prisma.user.update({
-        where: { id: userId },
-        data: { 
-          cashBalance: { increment: stimulusAmount },
-          lastStimulusClaim: now
-        }
-      });
-    }
-
-    return { success: true, amount: stimulusAmount };
-  }
 }

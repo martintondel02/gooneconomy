@@ -1,40 +1,45 @@
 import React, { useState } from 'react';
 import { useMarketStore } from '../store/useMarketStore';
-import { History, LayoutPanelLeft, Activity } from 'lucide-react';
+import { History, Activity, AlertCircle } from 'lucide-react';
 
 const PositionsTerminal: React.FC = () => {
-  const { positions, closePosition } = useMarketStore();
+  const { positions, trades, closePosition, assets } = useMarketStore();
   const [activeTab, setActiveTab] = useState<'POSITIONS' | 'HISTORY'>('POSITIONS');
 
+  const getTicker = (assetId: string) => assets.find(a => a.id === assetId)?.ticker || assetId;
+
   return (
-    <div className="flex-1 flex flex-col bg-[#0D0E12] overflow-hidden border-t border-white/[0.04]">
+    <div className="flex-1 flex flex-col bg-[#08090D] overflow-hidden border-t border-white/[0.04]">
       {/* Tabbed Header */}
       <div className="h-[42px] px-6 border-b border-white/[0.04] flex items-center justify-between bg-white/[0.01]">
         <div className="flex items-center gap-8 h-full">
           <button 
             onClick={() => setActiveTab('POSITIONS')}
-            className={`flex items-center gap-2 h-full px-1 border-b-2 transition-all ${activeTab === 'POSITIONS' ? 'border-[#3E7BFA] text-white' : 'border-transparent text-white/20 hover:text-white/40'}`}
+            className={`flex items-center gap-2 h-full px-1 border-b-2 transition-all ${activeTab === 'POSITIONS' ? 'border-apex text-white' : 'border-transparent text-white/20 hover:text-white/40'}`}
           >
             <Activity size={14} />
-            <span className="pro-label !text-inherit">Active Positions</span>
-            <span className={`px-1.5 py-0.5 rounded-md text-[9px] font-bold font-mono ${activeTab === 'POSITIONS' ? 'bg-[#3E7BFA]/10 text-[#3E7BFA]' : 'bg-white/5 text-white/20'}`}>
+            <span className="pro-label !text-inherit">Active Nodes</span>
+            <span className={`px-1.5 py-0.5 rounded-md text-[9px] font-bold font-mono ${activeTab === 'POSITIONS' ? 'bg-apex/10 text-apex' : 'bg-white/5 text-white/20'}`}>
               {positions.length}
             </span>
           </button>
           
           <button 
             onClick={() => setActiveTab('HISTORY')}
-            className={`flex items-center gap-2 h-full px-1 border-b-2 transition-all ${activeTab === 'HISTORY' ? 'border-[#3E7BFA] text-white' : 'border-transparent text-white/20 hover:text-white/40'}`}
+            className={`flex items-center gap-2 h-full px-1 border-b-2 transition-all ${activeTab === 'HISTORY' ? 'border-apex text-white' : 'border-transparent text-white/20 hover:text-white/40'}`}
           >
             <History size={14} />
-            <span className="pro-label !text-inherit">Trade History</span>
+            <span className="pro-label !text-inherit">Trade Archive</span>
+            <span className={`px-1.5 py-0.5 rounded-md text-[9px] font-bold font-mono ${activeTab === 'HISTORY' ? 'bg-apex/10 text-apex' : 'bg-white/5 text-white/20'}`}>
+              {trades.length}
+            </span>
           </button>
         </div>
         
         <div className="flex items-center gap-4 opacity-20">
            <span className="text-[9px] font-bold uppercase tracking-widest flex items-center gap-1.5">
-             <div className="w-1 h-1 rounded-full bg-bull"></div>
-             Engine Nominal
+             <div className="w-1 h-1 rounded-full bg-bull shadow-[0_0_8px_rgba(0,255,148,0.4)]"></div>
+             Engine v0.4.0
            </span>
         </div>
       </div>
@@ -57,8 +62,8 @@ const PositionsTerminal: React.FC = () => {
                 <tr key={p.id} className="hover:bg-white/[0.01] transition-colors group">
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-2">
-                      <div className="w-1.5 h-1.5 rounded-full bg-[#3E7BFA]/40"></div>
-                      <span className="text-[12px] font-bold text-white/90">{p.assetId}USDT</span>
+                      <div className="w-1.5 h-1.5 rounded-full bg-apex/40"></div>
+                      <span className="text-[12px] font-bold text-white/90">{getTicker(p.assetId)}</span>
                     </div>
                   </td>
                   <td className="px-6 py-4">
@@ -114,10 +119,48 @@ const PositionsTerminal: React.FC = () => {
             </tbody>
           </table>
         ) : (
-          <div className="flex flex-col items-center justify-center py-20 opacity-10">
-            <History size={32} className="mb-4" />
-            <span className="text-[10px] font-bold uppercase tracking-[0.5em]">Historical Archive Empty</span>
-          </div>
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="bg-white/[0.01]">
+                <th className="px-6 py-2.5 pro-label !text-[9px]">Time</th>
+                <th className="px-6 py-2.5 pro-label !text-[9px]">Asset</th>
+                <th className="px-6 py-2.5 pro-label !text-[9px]">Type</th>
+                <th className="px-6 py-2.5 pro-label !text-[9px]">Price</th>
+                <th className="px-6 py-2.5 pro-label !text-[9px] text-right">PnL (USD)</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-white/[0.02]">
+              {trades.map((t) => (
+                <tr key={t.id} className="hover:bg-white/[0.01] transition-colors">
+                  <td className="px-6 py-4 text-[10px] font-mono text-white/30">
+                    {new Date(t.timestamp).toLocaleString([], { hour12: false, month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                  </td>
+                  <td className="px-6 py-4 font-bold text-white/70">{getTicker(t.assetId)}</td>
+                  <td className="px-6 py-4">
+                    <span className={`text-[10px] font-black px-2 py-0.5 rounded border ${t.type === 'BUY' ? 'bg-bull/5 border-bull/20 text-bull' : 'bg-bear/5 border-bear/20 text-bear'}`}>
+                      {t.type}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 font-mono text-white/50">${t.priceAtExecution.toFixed(2)}</td>
+                  <td className="px-6 py-4 text-right">
+                    <span className={`font-mono font-bold ${t.pnl > 0 ? 'text-bull' : (t.pnl < 0 ? 'text-bear' : 'text-white/20')}`}>
+                      {t.pnl !== 0 ? (t.pnl > 0 ? '+' : '') + t.pnl.toFixed(2) : '--'}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+              {trades.length === 0 && (
+                <tr>
+                  <td colSpan={5} className="px-6 py-20 text-center">
+                    <div className="flex flex-col items-center gap-4 opacity-5">
+                      <History size={32} />
+                      <span className="text-[10px] font-bold uppercase tracking-[0.5em]">No Historical Data Found</span>
+                    </div>
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         )}
       </div>
     </div>

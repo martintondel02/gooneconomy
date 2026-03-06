@@ -23,11 +23,7 @@ export class PositionManager {
     leverage: number
   ) {
     const currentPrice = this.engine.getCurrentPrice(assetId);
-    
-    // Quantity = (Margin * Leverage) / Price
     const quantity = (margin * leverage) / currentPrice;
-    
-    // Liquidation Price (approximate 90% margin loss)
     const liqBuffer = 0.9 / leverage;
     const liquidationPrice = side === PositionSide.LONG 
       ? currentPrice * (1 - liqBuffer)
@@ -47,7 +43,18 @@ export class PositionManager {
       }
     });
 
-    // Deduct margin from user balance
+    // Record the Opening Trade
+    await prisma.trade.create({
+      data: {
+        userId,
+        assetId,
+        type: side === PositionSide.LONG ? 'BUY' : 'SELL',
+        quantity,
+        priceAtExecution: currentPrice,
+        pnl: 0
+      }
+    });
+
     await prisma.user.update({
       where: { id: userId },
       data: { cashBalance: { decrement: margin } }
@@ -82,13 +89,25 @@ export class PositionManager {
     if (!position) return null;
 
     const pnl = this.calculatePnL(position);
+    const currentPrice = this.engine.getCurrentPrice(position.assetId);
     
     const updatedPosition = await prisma.position.update({
       where: { id: positionId },
       data: { isActive: false, closedAt: new Date() }
     });
 
-    // Return margin + pnl to user
+    // Record the Closing Trade
+    await prisma.trade.create({
+      data: {
+        userId: position.userId,
+        assetId: position.assetId,
+        type: position.side === 'LONG' ? 'SELL' : 'BUY',
+        quantity: position.quantity,
+        priceAtExecution: currentPrice,
+        pnl: pnl
+      }
+    });
+
     await prisma.user.update({
       where: { id: position.userId },
       data: { cashBalance: { increment: position.margin + pnl } }
@@ -103,7 +122,7 @@ export class PositionManager {
     
     for (const p of activePositions) {
       const currentPrice = this.engine.getCurrentPrice(p.assetId);
-      const isLiquidated = p.side === PositionSide.LONG
+      const isLiquidated = p.side === 'LONG'
         ? currentPrice <= p.liquidationPrice
         : currentPrice >= p.liquidationPrice;
 
@@ -113,7 +132,18 @@ export class PositionManager {
           data: { isActive: false, closedAt: new Date() }
         });
         
-        // Margin is already deducted, so PnL for user is -margin (lost it all)
+        // Record the Liquidation Trade
+        await prisma.trade.create({
+          data: {
+            userId: p.userId,
+            assetId: p.assetId,
+            type: p.side === 'LONG' ? 'SELL' : 'BUY',
+            quantity: p.quantity,
+            priceAtExecution: currentPrice,
+            pnl: -p.margin
+          }
+        });
+
         liquidated.push({ position: p, pnl: -p.margin });
       }
     }

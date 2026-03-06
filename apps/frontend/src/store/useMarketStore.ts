@@ -4,14 +4,16 @@ import { io, Socket } from 'socket.io-client';
 interface MarketState {
   prices: Record<string, number>;
   marketCaps: Record<string, number>;
+  orderbooks: Record<string, any>;
   assets: any[];
   positions: any[];
+  trades: any[];
   leaderboard: any[];
   user: any | null;
   token: string | null;
   activeAsset: any | null;
   activeTimeframe: string;
-  activeTab: 'TRADING' | 'PORTFOLIO' | 'SHOP';
+  activeTab: 'TRADING' | 'PORTFOLIO' | 'SHOP' | 'ADMIN';
   socket: Socket | null;
   connect: () => void;
   disconnect: () => void;
@@ -20,18 +22,27 @@ interface MarketState {
   logout: () => void;
   setActiveAsset: (asset: any) => void;
   setActiveTimeframe: (tf: string) => void;
-  setActiveTab: (tab: 'TRADING' | 'PORTFOLIO' | 'SHOP') => void;
+  setActiveTab: (tab: 'TRADING' | 'PORTFOLIO' | 'SHOP' | 'ADMIN') => void;
   openPosition: (side: 'LONG' | 'SHORT', margin: number, leverage: number) => Promise<void>;
   closePosition: (positionId: string) => Promise<void>;
-  claimStimulus: () => Promise<void>;
   fetchUser: () => Promise<void>;
+  fetchTrades: () => Promise<void>;
+  
+  // Admin Actions
+  adminAssets: any[];
+  fetchAdminAssets: () => Promise<void>;
+  addAsset: (data: any) => Promise<void>;
+  editAsset: (data: any) => Promise<void>;
+  setMarketBias: (assetId: string, bias: number) => Promise<void>;
 }
 
 export const useMarketStore = create<MarketState>((set, get) => ({
   prices: {},
   marketCaps: {},
+  orderbooks: {},
   assets: [],
   positions: [],
+  trades: [],
   leaderboard: [],
   user: null,
   token: localStorage.getItem('goon_token'),
@@ -39,6 +50,7 @@ export const useMarketStore = create<MarketState>((set, get) => ({
   activeTimeframe: '1m',
   activeTab: 'TRADING',
   socket: null,
+  adminAssets: [],
 
   connect: () => {
     if (get().socket) return;
@@ -57,6 +69,8 @@ export const useMarketStore = create<MarketState>((set, get) => ({
 
     socket.on('market:prices', (prices: Record<string, number>) => set({ prices }));
     socket.on('market:caps', (marketCaps: Record<string, number>) => set({ marketCaps }));
+    socket.on('market:orderbooks', (orderbooks: Record<string, any>) => set({ orderbooks }));
+    
     socket.on('user:positions', (positions: any[]) => {
       const { user } = get();
       if (user) {
@@ -65,20 +79,27 @@ export const useMarketStore = create<MarketState>((set, get) => ({
       }
     });
     socket.on('market:leaderboard', (leaderboard: any[]) => set({ leaderboard }));
+    
+    socket.on('user:data', (freshUser: any) => {
+      set({ user: freshUser });
+      localStorage.setItem('goon_user', JSON.stringify(freshUser));
+    });
 
     // Fetch initial assets
     fetch(`${apiUrl}/assets`)
       .then(res => res.json())
       .then(assets => {
-        set({ assets, activeAsset: assets[0] });
+        set({ assets, activeAsset: get().activeAsset || assets[0] });
       });
 
     set({ socket });
 
-    // If we have a token but no user, fetch user
     const { token, user } = get();
     if (token && !user) {
       get().fetchUser();
+    }
+    if (user) {
+      get().fetchTrades();
     }
   },
 
@@ -95,15 +116,11 @@ export const useMarketStore = create<MarketState>((set, get) => ({
     if (!token) return;
 
     try {
-      // For now, we decode userId from JWT or have a /me endpoint
-      // Let's assume the token is the userId for simplicity in v0.0.1 or we'd need a /me
-      // Actually, let's just store user object in localStorage for now to keep it simple
       const storedUser = localStorage.getItem('goon_user');
       if (storedUser) {
         const user = JSON.parse(storedUser);
         set({ user });
         
-        // Refresh user data from server
         const host = window.location.hostname;
         const apiUrl = `http://${host}:28081`;
         const res = await fetch(`${apiUrl}/user/${user.id}`);
@@ -118,6 +135,18 @@ export const useMarketStore = create<MarketState>((set, get) => ({
       }
     } catch (e) {
       console.error('Failed to fetch user', e);
+    }
+  },
+
+  fetchTrades: async () => {
+    const { user } = get();
+    if (!user) return;
+    const host = window.location.hostname;
+    const apiUrl = `http://${host}:28081`;
+    const res = await fetch(`${apiUrl}/user/trades/${user.id}`);
+    if (res.ok) {
+      const data = await res.json();
+      set({ trades: data });
     }
   },
 
@@ -138,6 +167,7 @@ export const useMarketStore = create<MarketState>((set, get) => ({
     
     const { socket } = get();
     if (socket) socket.emit('subscribe:user', result.user.id);
+    get().fetchTrades();
     
     return {};
   },
@@ -159,6 +189,7 @@ export const useMarketStore = create<MarketState>((set, get) => ({
 
     const { socket } = get();
     if (socket) socket.emit('subscribe:user', result.user.id);
+    get().fetchTrades();
 
     return {};
   },
@@ -166,12 +197,12 @@ export const useMarketStore = create<MarketState>((set, get) => ({
   logout: () => {
     localStorage.removeItem('goon_token');
     localStorage.removeItem('goon_user');
-    set({ token: null, user: null, positions: [] });
+    set({ token: null, user: null, positions: [], trades: [] });
   },
 
   setActiveAsset: (asset: any) => set({ activeAsset: asset }),
   setActiveTimeframe: (tf: string) => set({ activeTimeframe: tf }),
-  setActiveTab: (tab: 'TRADING' | 'PORTFOLIO' | 'SHOP') => set({ activeTab: tab }),
+  setActiveTab: (tab) => set({ activeTab: tab }),
 
   openPosition: async (side, margin, leverage) => {
     const { activeAsset, user } = get();
@@ -190,7 +221,8 @@ export const useMarketStore = create<MarketState>((set, get) => ({
         leverage
       })
     });
-    get().fetchUser(); // Refresh balance
+    get().fetchUser();
+    get().fetchTrades();
   },
 
   closePosition: async (positionId: string) => {
@@ -201,26 +233,49 @@ export const useMarketStore = create<MarketState>((set, get) => ({
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ positionId })
     });
-    get().fetchUser(); // Refresh balance
+    get().fetchUser();
+    get().fetchTrades();
   },
 
-  claimStimulus: async () => {
-    const { user } = get();
-    if (!user) return;
-
+  // Admin Implementation
+  fetchAdminAssets: async () => {
     const host = window.location.hostname;
     const apiUrl = `http://${host}:28081`;
-    const res = await fetch(`${apiUrl}/user/claim-stimulus`, {
+    const res = await fetch(`${apiUrl}/admin/assets`);
+    const data = await res.json();
+    set({ adminAssets: data });
+  },
+
+  addAsset: async (data) => {
+    const host = window.location.hostname;
+    const apiUrl = `http://${host}:28081`;
+    await fetch(`${apiUrl}/admin/assets/add`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId: user.id })
+      body: JSON.stringify(data)
     });
-    const result = await res.json();
-    if (!result.success && result.nextClaimIn) {
-      const hours = Math.floor(result.nextClaimIn / (60 * 60 * 1000));
-      alert(`Stimulus available in ${hours} hours.`);
-    } else {
-      get().fetchUser(); // Refresh balance
-    }
+    get().fetchAdminAssets();
+  },
+
+  editAsset: async (data) => {
+    const host = window.location.hostname;
+    const apiUrl = `http://${host}:28081`;
+    await fetch(`${apiUrl}/admin/assets/edit`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    get().fetchAdminAssets();
+  },
+
+  setMarketBias: async (assetId, bias) => {
+    const host = window.location.hostname;
+    const apiUrl = `http://${host}:28081`;
+    await fetch(`${apiUrl}/admin/market/bias`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ assetId, bias })
+    });
+    get().fetchAdminAssets();
   }
 }));

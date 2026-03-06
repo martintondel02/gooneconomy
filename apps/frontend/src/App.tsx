@@ -1,9 +1,10 @@
 import React, { useEffect } from 'react';
-import { Wallet, ShoppingBag, Settings, TrendingUp, LogOut, BarChart3, Users } from 'lucide-react';
+import { Wallet, ShoppingBag, Settings, TrendingUp, LogOut, BarChart3, Users, ShieldAlert } from 'lucide-react';
 import { useMarketStore } from './store/useMarketStore';
 import TradingView from './views/TradingView';
 import PortfolioView from './views/PortfolioView';
 import ShopView from './views/ShopView';
+import AdminView from './views/AdminView';
 import AuthView from './views/AuthView';
 
 function App() {
@@ -17,7 +18,6 @@ function App() {
     connect, 
     disconnect, 
     setActiveTab,
-    claimStimulus,
     logout
   } = useMarketStore();
 
@@ -30,8 +30,6 @@ function App() {
     return <AuthView />;
   }
 
-  const tickers = ['GOON', 'BTC', 'ETH', 'NVDA', 'PUMPKIN', 'MOSSAD', 'AAPL', 'TSLA', 'GOLD'];
-
   const unrealizedPnL = positions.reduce((acc, p) => acc + (p.pnl || 0), 0);
   const netWorth = (user?.cashBalance || 0) + unrealizedPnL;
 
@@ -40,30 +38,13 @@ function App() {
       case 'TRADING': return <TradingView />;
       case 'PORTFOLIO': return <PortfolioView />;
       case 'SHOP': return <ShopView />;
+      case 'ADMIN': return <AdminView />;
       default: return <TradingView />;
     }
   };
 
   return (
     <div className="flex flex-col h-screen bg-[#0D0E12] text-[#F0F2F5] overflow-hidden font-sans">
-      {/* Institutional Top Ticker */}
-      <div className="h-8 border-b border-white/[0.04] flex items-center overflow-hidden bg-white/[0.01] backdrop-blur-md">
-        <div className="whitespace-nowrap animate-marquee px-4">
-          {tickers.map(ticker => {
-            const price = prices[ticker] || 0;
-            const isUp = price > 100; // Mock condition
-            return (
-              <span key={ticker} className="mx-8 flex items-center gap-2">
-                <span className="text-[10px] font-bold text-white/20 uppercase tracking-wider">{ticker}</span>
-                <span className={`text-[11px] font-mono font-bold ${isUp ? 'text-bull' : 'text-bear'}`}>
-                  ${price.toFixed(price < 1 ? 4 : 2)}
-                </span>
-              </span>
-            );
-          })}
-        </div>
-      </div>
-
       <div className="flex flex-1 overflow-hidden">
         {/* Sleek Rail Sidebar */}
         <aside className="w-[60px] border-r border-white/[0.04] flex flex-col items-center py-6 gap-8 bg-[#0D0E12] z-50">
@@ -92,12 +73,22 @@ function App() {
               onClick={() => setActiveTab('SHOP')} 
               label="Shop"
             />
+            {/* ADMIN ICON - ONLY FOR ADMINS */}
+            {user.isAdmin && (
+              <NavIcon 
+                active={activeTab === 'ADMIN'} 
+                icon={<ShieldAlert size={20} />} 
+                onClick={() => setActiveTab('ADMIN')} 
+                label="Admin"
+                color="#00FF94"
+              />
+            )}
           </div>
 
           <div className="mt-auto flex flex-col items-center gap-6 pb-2">
             <div className="group relative">
-              <div className="absolute left-full ml-4 px-2 py-1 bg-white/[0.05] rounded border border-white/[0.1] text-[8px] font-bold text-white/40 uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">Version 0.3.0</div>
-              <span className="text-[8px] font-bold text-white/10 uppercase -rotate-90 origin-center whitespace-nowrap tracking-[0.2em]">v0.3.0</span>
+              <div className="absolute left-full ml-4 px-2 py-1 bg-[#1C1E26] border border-white/[0.05] rounded text-[8px] font-bold text-white/40 uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">Version 0.4.0</div>
+              <span className="text-[8px] font-bold text-white/10 uppercase -rotate-90 origin-center whitespace-nowrap tracking-[0.2em]">v0.4.0</span>
             </div>
             
             <div className="flex flex-col gap-4 items-center">
@@ -136,12 +127,6 @@ function App() {
                 <span className="pro-label !text-[8px] opacity-40">Node Standing</span>
                 <span className="text-[11px] font-bold text-bull tracking-tight">RANK #{leaderboard.find(l => l.username === user?.username)?.rank || '---'}</span>
               </div>
-              <button 
-                onClick={() => claimStimulus()}
-                className="px-4 py-2 rounded-lg bg-bull/5 border border-bull/10 text-[10px] font-bold text-bull uppercase tracking-widest hover:bg-bull/10 transition-all active:scale-95 shadow-lg shadow-bull/5"
-              >
-                Claim Stimulus
-              </button>
             </div>
           </header>
 
@@ -155,14 +140,15 @@ function App() {
   );
 }
 
-const NavIcon = ({ active, icon, onClick, label }: any) => (
+const NavIcon = ({ active, icon, onClick, label, color }: any) => (
   <div className="group relative flex flex-col items-center">
     <div 
       onClick={onClick}
-      className={`p-3 cursor-pointer rounded-xl transition-all relative ${active ? 'bg-[#3E7BFA]/10 text-[#3E7BFA]' : 'text-white/20 hover:bg-white/[0.03] hover:text-white/40'}`}
+      className={`p-3 cursor-pointer rounded-xl transition-all relative ${active ? (color ? `bg-white/5 text-[${color}]` : 'bg-[#3E7BFA]/10 text-[#3E7BFA]') : 'text-white/20 hover:bg-white/[0.03] hover:text-white/40'}`}
+      style={active && color ? { color: color, backgroundColor: 'rgba(255,255,255,0.05)' } : {}}
     >
       {icon}
-      {active && <div className="absolute left-[-18px] top-1/4 w-[3px] h-1/2 bg-[#3E7BFA] rounded-r-full shadow-[0_0_15px_rgba(62,123,250,0.6)]"></div>}
+      {active && <div className="absolute left-[-18px] top-1/4 w-[3px] h-1/2 bg-[#3E7BFA] rounded-r-full shadow-[0_0_15px_rgba(62,123,250,0.6)]" style={color ? {backgroundColor: color} : {}}></div>}
     </div>
     <span className="absolute left-full ml-4 px-2 py-1 bg-[#1C1E26] border border-white/[0.05] rounded text-[9px] font-bold text-white/60 uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity z-[100] pointer-events-none">
       {label}

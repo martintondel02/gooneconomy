@@ -17,6 +17,7 @@ model User {
   id                String   @id @default(uuid())
   username          String   @unique
   password          String
+  isAdmin           Boolean  @default(false)
   cashBalance       Float    @default(100.0)
   statusScore       Int      @default(0)
   lastStimulusClaim DateTime @default(dbgenerated("'1970-01-01 00:00:00'"))
@@ -35,6 +36,8 @@ model Asset {
   type         AssetType
   currentPrice Float
   totalSupply  Float
+  volatility   Float     @default(1.0)
+  manualBias   Float     @default(0.0) // Persistent price drift (-1.0 to 1.0)
   trades       Trade[]
   positions    Position[]
   createdAt    DateTime  @default(now())
@@ -78,6 +81,7 @@ model Trade {
   type             TradeType
   quantity         Float
   priceAtExecution Float
+  pnl              Float?    @default(0.0)
   timestamp        DateTime  @default(now())
 }
 
