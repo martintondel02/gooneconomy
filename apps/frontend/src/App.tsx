@@ -123,33 +123,35 @@ function App() {
 
         <main className="flex-1 flex flex-col overflow-hidden">
           {/* Minimalist Pro Header */}
-          <header className="h-14 terminal-border-b flex items-center px-6 justify-between bg-black/40">
-            <div className="flex items-center gap-8">
+          <header className="h-12 terminal-border-b flex items-center px-4 justify-between bg-[#08080c]/80 backdrop-blur-md">
+            <div className="flex items-center gap-6">
               <div className="flex flex-col">
-                <span className="text-[8px] font-black text-white/20 uppercase tracking-widest">Equity</span>
-                <span className="text-sm font-mono font-black text-bull">${netWorth.toFixed(2)}</span>
+                <span className="text-[7px] font-black text-white/20 uppercase tracking-[0.2em]">Equity / USD</span>
+                <span className="text-[11px] font-mono font-black text-bull tracking-tight">${netWorth.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
               </div>
+              <div className="w-px h-6 bg-white/5"></div>
               <div className="flex flex-col">
-                <span className="text-[8px] font-black text-white/20 uppercase tracking-widest">Available</span>
-                <span className="text-sm font-mono font-black text-white/70">${user?.cashBalance.toFixed(2)}</span>
+                <span className="text-[7px] font-black text-white/20 uppercase tracking-[0.2em]">Available</span>
+                <span className="text-[11px] font-mono font-black text-white/60 tracking-tight">${user?.cashBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
               </div>
+              <div className="w-px h-6 bg-white/5"></div>
               <div className="flex flex-col">
-                <span className="text-[8px] font-black text-white/20 uppercase tracking-widest">PnL</span>
-                <span className={`text-sm font-mono font-black ${unrealizedPnL >= 0 ? 'text-bull' : 'text-bear'}`}>
-                  {unrealizedPnL >= 0 ? '+' : ''}{unrealizedPnL.toFixed(2)}
+                <span className="text-[7px] font-black text-white/20 uppercase tracking-[0.2em]">Unrealized PnL</span>
+                <span className={`text-[11px] font-mono font-black tracking-tight ${unrealizedPnL >= 0 ? 'text-bull' : 'text-bear'}`}>
+                  {unrealizedPnL >= 0 ? '+' : ''}{unrealizedPnL.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </span>
               </div>
             </div>
 
             <div className="flex items-center gap-4">
               <div className="flex flex-col items-end">
-                <span className="text-[8px] font-black text-white/20 uppercase">Global Rank</span>
-                <span className="text-xs font-black text-bull">#{leaderboard.find(l => l.username === user?.username)?.rank || '---'}</span>
+                <span className="text-[7px] font-black text-white/20 uppercase tracking-widest">Global Rank</span>
+                <span className="text-[10px] font-black text-bull italic">#{leaderboard.find(l => l.username === user?.username)?.rank || '---'}</span>
               </div>
-              <div className="w-px h-6 bg-white/5 mx-2"></div>
+              <div className="w-px h-6 bg-white/5 mx-1"></div>
               <button 
                 onClick={() => claimStimulus()}
-                className="px-4 py-1.5 rounded bg-bull/10 border border-bull/30 text-[9px] font-black text-bull uppercase tracking-widest hover:bg-bull/20 transition-all"
+                className="px-3 py-1.5 rounded bg-bull/5 border border-bull/20 text-[8px] font-black text-bull uppercase tracking-[0.1em] hover:bg-bull/10 transition-all active:scale-95"
               >
                 Claim Stimulus
               </button>

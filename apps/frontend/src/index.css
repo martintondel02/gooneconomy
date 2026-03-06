@@ -33,6 +33,25 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* SOLID TERMINAL RESET */
+input, button, select, textarea {
+  background: none;
+  color: inherit;
+  border: none;
+  padding: 0;
+  font: inherit;
+  cursor: pointer;
+  outline: inherit;
+}
+
+input:focus {
+  outline: none;
+}
+
+input::placeholder {
+  color: rgba(255, 255, 255, 0.2);
+}
+
 .font-mono { font-family: 'JetBrains Mono', 'Roboto Mono', monospace; }
 
 /* Global Utilities */
