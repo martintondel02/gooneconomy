@@ -73,7 +73,7 @@ const AdminView: React.FC = () => {
       totalSupply: asset.totalSupply,
       volatility: asset.volatility
     });
-    setPreviewUrl(asset.imageUrl ? `http://${window.location.hostname}:28081${asset.imageUrl}` : null);
+    setPreviewUrl(asset.imageUrl || null);
     setShowModal(true);
   };
 

@@ -85,6 +85,36 @@ export class CandleStore {
     return current ? [...history, current] : history;
   }
 
+  public seedHistory(assetId: string, startPrice: number) {
+    if (!this.history.has(assetId)) this.history.set(assetId, new Map());
+    if (!this.current.has(assetId)) this.current.set(assetId, new Map());
+
+    const assetHistory = this.history.get(assetId)!;
+    const nowSec = Math.floor(Date.now() / 1000);
+
+    Object.keys(TF_SECONDS).forEach(tf => {
+      const duration = TF_SECONDS[tf];
+      const candles: Candle[] = [];
+      let lastPrice = startPrice;
+
+      // Seed 100 historical candles
+      for (let i = 100; i > 0; i--) {
+        const time = (Math.floor(nowSec / duration) * duration) - (i * duration);
+        const volatility = 0.002;
+        const change = (Math.random() - 0.5) * volatility * lastPrice;
+        const open = lastPrice;
+        const close = lastPrice + change;
+        const high = Math.max(open, close) + (Math.random() * volatility * lastPrice * 0.5);
+        const low = Math.min(open, close) - (Math.random() * volatility * lastPrice * 0.5);
+
+        candles.push({ time, open, high, low, close });
+        lastPrice = close;
+      }
+
+      assetHistory.set(tf, candles);
+    });
+  }
+
   public clearAll() {
     this.history.clear();
     this.current.clear();

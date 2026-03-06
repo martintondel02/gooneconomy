@@ -107,25 +107,29 @@ const Chart = forwardRef<ChartHandle, ChartProps>(({ assetId, ticker, mode = 'MA
     const duration = durationMap[activeTimeframe] || 60;
     const now = Math.floor(Date.now() / 1000 / duration) * duration;
 
-    let candle = currentCandleRef.current;
+    const candle = currentCandleRef.current;
 
     if (!candle || candle.time !== now) {
-      candle = {
-        time: now,
-        open: currentValue,
-        high: currentValue,
-        low: currentValue,
+      const newCandle = {
+        time: now as any,
+        open: candle ? candle.close : currentValue,
+        high: candle ? Math.max(candle.close, currentValue) : currentValue,
+        low: candle ? Math.min(candle.close, currentValue) : currentValue,
         close: currentValue
       };
+      currentCandleRef.current = newCandle;
+      candleSeriesRef.current.update(newCandle);
     } else {
-      candle.high = Math.max(candle.high, currentValue);
-      candle.low = Math.min(candle.low, currentValue);
-      candle.close = currentValue;
+      const updatedCandle = {
+        ...candle,
+        high: Math.max(candle.high, currentValue),
+        low: Math.min(candle.low, currentValue),
+        close: currentValue
+      };
+      currentCandleRef.current = updatedCandle;
+      candleSeriesRef.current.update(updatedCandle);
     }
-
-    currentCandleRef.current = candle;
-    candleSeriesRef.current.update(candle as any);
-  }, [prices[ticker], activeTimeframe, ticker, mode]);
+  }, [prices[ticker], activeTimeframe, ticker, mode, currentAsset]);
 
   useEffect(() => {
     if (!chartContainerRef.current) return;
@@ -187,12 +191,13 @@ const Chart = forwardRef<ChartHandle, ChartProps>(({ assetId, ticker, mode = 'MA
     candleSeriesRef.current = candleSeries;
 
     const host = window.location.hostname;
-    const apiUrl = `http://${host}:28081`;
+    const apiUrl = import.meta.env.VITE_API_URL || '';
     setLoading(true);
     
     fetch(`${apiUrl}/candles/${assetId}?tf=${activeTimeframe}`)
       .then(res => res.json())
       .then(data => {
+        console.log(`[Chart] Loaded ${data?.length || 0} candles for ${ticker} (${activeTimeframe})`);
         if (data && data.length > 0) {
           const transformedData = data.map((c: any) => {
             if (mode === 'MARKET_CAP' && currentAsset) {
@@ -210,13 +215,23 @@ const Chart = forwardRef<ChartHandle, ChartProps>(({ assetId, ticker, mode = 'MA
 
           candleSeries.setData(transformedData);
           const lastCandle = transformedData[transformedData.length - 1];
-          currentCandleRef.current = { ...lastCandle };
+          currentCandleRef.current = { 
+            time: lastCandle.time,
+            open: lastCandle.open,
+            high: lastCandle.high,
+            low: lastCandle.low,
+            close: lastCandle.close
+          };
           
-          chart.timeScale().fitContent();
+          // Ensure we see the latest data
+          chart.timeScale().scrollToPosition(0, false);
         }
         setLoading(false);
       })
-      .catch(() => setLoading(false));
+      .catch(err => {
+        console.error(`[Chart] Failed to load history for ${ticker}:`, err);
+        setLoading(false);
+      });
 
     const handleResize = () => {
       if (chartContainerRef.current) {

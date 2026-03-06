@@ -85,7 +85,14 @@ async function initializeServer() {
 
   await engine.syncFromDb();
   await shadowMarketMaker.recoverState();
-  console.log('Engine synced with database and Redis.');
+
+  // Seed history for all assets
+  const assets = engine.getAssets();
+  for (const asset of assets) {
+    candleStore.seedHistory(asset.id, asset.currentPrice);
+  }
+
+  console.log('Engine synced with database and Redis. CandleStore seeded.');
 
   httpServer.listen(port, () => {
     console.log(`GoonEconomy Backend listening on port ${port}`);

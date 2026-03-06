@@ -105,7 +105,7 @@ const TradingView: React.FC = () => {
             <div className="w-px h-3 bg-white/[0.06] flex-shrink-0"></div>
             
             <div className="flex items-center gap-1 bg-white/[0.02] p-0.5 rounded-md border border-white/[0.04] overflow-x-auto custom-scrollbar no-scrollbar flex-shrink-0">
-              {timeframes.slice(2).map(tf => (
+              {timeframes.map(tf => (
                 <button
                   key={tf}
                   onClick={() => setActiveTimeframe(tf)}
@@ -123,7 +123,7 @@ const TradingView: React.FC = () => {
           {activeAsset ? (
             <Chart 
               ref={chartRef}
-              key={`${activeAsset.id}-${activeTimeframe}-${chartMode}`} 
+              key={activeAsset.id} 
               assetId={activeAsset.id} 
               ticker={activeAsset.ticker} 
               mode={chartMode}
