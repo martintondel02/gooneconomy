@@ -58,19 +58,13 @@ function App() {
             fontWeight: 600,
             letterSpacing: '0.05em',
             textTransform: 'uppercase'
-          },
-          success: {
-            iconTheme: { primary: '#00FF94', secondary: '#1C1E26' }
-          },
-          error: {
-            iconTheme: { primary: '#FF3E60', secondary: '#1C1E26' }
           }
         }}
       />
       
-      <div className="flex flex-1 min-h-0 overflow-hidden">
-        {/* Sleek Rail Sidebar */}
-        <aside className="w-[60px] flex-shrink-0 border-r border-white/[0.04] flex flex-col items-center py-6 gap-8 bg-[#0D0E12] z-50">
+      <div className="flex flex-1 min-h-0 overflow-hidden relative">
+        {/* Sleek Rail Sidebar - INTEGRATED LABELS */}
+        <aside className="w-[60px] flex-shrink-0 border-r border-white/[0.04] flex flex-col items-center py-6 gap-8 bg-[#0D0E12] z-[100]">
           <div className="mb-2">
             <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#3E7BFA] to-[#00FF94] flex items-center justify-center shadow-lg shadow-black/20 group cursor-pointer active:scale-95 transition-all">
               <span className="font-black italic text-[#0D0E12] text-lg">G</span>
@@ -109,25 +103,23 @@ function App() {
 
           <div className="mt-auto flex flex-col items-center gap-6 pb-2">
             <div className="group relative">
-              <span className="text-[8px] font-bold text-white/10 uppercase -rotate-90 origin-center whitespace-nowrap tracking-[0.2em]">v0.6.0</span>
+              <span className="text-[8px] font-bold text-white/10 uppercase -rotate-90 origin-center whitespace-nowrap tracking-[0.2em]">v0.6.3</span>
             </div>
             
             <div className="flex flex-col gap-4 items-center">
-              <div 
-                onClick={() => logout()}
-                className="p-2 cursor-pointer text-white/20 hover:text-bear transition-all group active:scale-90"
-                title="Disconnect"
-              >
+              <div onClick={() => logout()} className="p-2 cursor-pointer text-white/20 hover:text-bear transition-all group active:scale-90 relative">
                 <LogOut size={20} />
+                <span className="absolute left-[50px] top-1/2 -translate-y-1/2 px-2 py-1 bg-[#1C1E26] border border-white/[0.05] rounded text-[9px] font-bold text-white/60 uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity z-[110] pointer-events-none whitespace-nowrap shadow-2xl">Disconnect</span>
               </div>
-              <div className="p-2 cursor-pointer text-white/20 hover:text-white/60 transition-all active:scale-90">
+              <div className="p-2 cursor-pointer text-white/20 hover:text-white/60 transition-all active:scale-90 group relative">
                 <Settings size={20} />
+                <span className="absolute left-[50px] top-1/2 -translate-y-1/2 px-2 py-1 bg-[#1C1E26] border border-white/[0.05] rounded text-[9px] font-bold text-white/60 uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity z-[110] pointer-events-none whitespace-nowrap">Settings</span>
               </div>
             </div>
           </div>
         </aside>
 
-        <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
+        <main className="flex-1 flex flex-col min-w-0 overflow-hidden relative z-10">
           {/* Institutional Header */}
           <header className="h-[52px] flex-shrink-0 border-b border-white/[0.04] flex items-center px-6 justify-between bg-white/[0.01] backdrop-blur-xl z-40">
             <div className="flex items-center gap-10">
@@ -151,7 +143,6 @@ function App() {
             </div>
           </header>
 
-          {/* Main Viewport */}
           <div className="flex-1 flex min-h-0 overflow-hidden">
             {renderView()}
           </div>
@@ -165,13 +156,15 @@ const NavIcon = ({ active, icon, onClick, label, color }: any) => (
   <div className="group relative flex flex-col items-center">
     <div 
       onClick={onClick}
-      className={`p-3 cursor-pointer rounded-xl transition-all relative ${active ? 'bg-white/5' : 'text-white/20 hover:bg-white/[0.03] hover:text-white/40'}`}
+      className={`p-3 cursor-pointer rounded-xl transition-all relative z-20 ${active ? 'bg-white/5' : 'text-white/20 hover:bg-white/[0.03] hover:text-white/40'}`}
       style={active ? { color: color || '#FFFFFF' } : {}}
     >
       {icon}
-      {active && <div className="absolute left-[-18px] top-1/4 w-[3px] h-1/2 rounded-r-full shadow-[0_0_15px_rgba(255,255,255,0.6)]" style={{backgroundColor: color || '#FFFFFF', boxShadow: `0 0 15px ${color || '#FFFFFF'}`}}></div>}
+      {active && <div className="absolute left-[-18px] top-1/4 w-[3px] h-1/2 bg-white rounded-r-full" style={{backgroundColor: color || '#FFFFFF', boxShadow: `0 0 15px ${color || '#FFFFFF'}`}}></div>}
     </div>
-    <span className="absolute left-full ml-4 px-2 py-1 bg-[#1C1E26] border border-white/[0.05] rounded text-[9px] font-bold text-white/60 uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity z-[100] pointer-events-none whitespace-nowrap">
+    
+    {/* RE-POSITIONED TOOLTIP TO PREVENT OVERLAP */}
+    <span className="absolute left-[50px] top-1/2 -translate-y-1/2 px-2 py-1.5 bg-[#1C1E26] border border-white/[0.05] rounded-md text-[9px] font-bold text-white/80 uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-all z-[110] pointer-events-none whitespace-nowrap shadow-2xl">
       {label}
     </span>
   </div>
