@@ -117,16 +117,17 @@ const Chart = forwardRef<ChartHandle, ChartProps>(({ assetId, ticker, mode = 'MA
         low: candle ? Math.min(candle.close, currentValue) : currentValue,
         close: currentValue
       };
-      currentCandleRef.current = newCandle;
+      currentCandleRef.current = newCandle as any;
       candleSeriesRef.current.update(newCandle);
     } else {
       const updatedCandle = {
         ...candle,
+        time: candle.time as any,
         high: Math.max(candle.high, currentValue),
         low: Math.min(candle.low, currentValue),
         close: currentValue
       };
-      currentCandleRef.current = updatedCandle;
+      currentCandleRef.current = updatedCandle as any;
       candleSeriesRef.current.update(updatedCandle);
     }
   }, [prices[ticker], activeTimeframe, ticker, mode, currentAsset]);
