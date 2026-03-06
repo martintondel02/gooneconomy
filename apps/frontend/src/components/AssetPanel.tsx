@@ -7,6 +7,7 @@ const AssetPanel: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
 
   const formatLargeNumber = (num: number) => {
+    if (!num) return '0';
     if (num >= 1e9) return (num / 1e9).toFixed(1) + 'B';
     if (num >= 1e6) return (num / 1e6).toFixed(1) + 'M';
     if (num >= 1e3) return (num / 1e3).toFixed(1) + 'K';
@@ -37,9 +38,19 @@ const AssetPanel: React.FC = () => {
 
       <div className="flex-1 overflow-y-auto custom-scrollbar py-2">
         {filteredAssets.map((asset) => {
-          const currentMCap = marketCaps[asset.ticker] || 0;
-          const initialMCap = asset.price * asset.supply;
-          const isUp = currentMCap >= initialMCap;
+          const currentPrice = prices[asset.ticker] || asset.currentPrice || 0;
+          const initialPrice = asset.currentPrice || 0; // Use the DB's currentPrice as the baseline if history isn't tracked yet
+          const currentMCap = currentPrice * (asset.totalSupply || 0);
+          
+          // Calculate percentage change based on price, handling zero to avoid NaN
+          let percentChange = 0;
+          if (initialPrice > 0) {
+             percentChange = ((currentPrice - initialPrice) / initialPrice) * 100;
+          }
+
+          // In a real app, 'isUp' would compare to a 24h open price. 
+          // For now, we'll check if currentPrice is >= initialPrice, or use a small epsilon to avoid flickering on exactly 0%
+          const isUp = percentChange >= 0;
           const isActive = activeAsset?.id === asset.id;
 
           return (
@@ -60,7 +71,7 @@ const AssetPanel: React.FC = () => {
                    </span>
                 </div>
                 <span className={`text-[12px] font-mono font-bold ${isUp ? 'text-bull' : 'text-bear'}`}>
-                  ${prices[asset.ticker]?.toFixed(prices[asset.ticker] < 1 ? 3 : 2)}
+                  ${currentPrice.toFixed(currentPrice < 1 ? 3 : 2)}
                 </span>
               </div>
               <div className="flex justify-between items-center">
@@ -70,7 +81,7 @@ const AssetPanel: React.FC = () => {
                 </div>
                 <div className={`flex items-center gap-1 text-[10px] font-bold ${isUp ? 'text-bull/60' : 'text-bear/60'}`}>
                   {isUp ? <TrendingUp size={10} /> : <TrendingDown size={10} />}
-                  <span>{((Math.abs(currentMCap - initialMCap) / initialMCap) * 100).toFixed(1)}%</span>
+                  <span>{Math.abs(percentChange).toFixed(2)}%</span>
                 </div>
               </div>
             </div>

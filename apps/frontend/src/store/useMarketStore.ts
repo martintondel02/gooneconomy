@@ -33,12 +33,16 @@ interface MarketState {
   
   // Admin Actions
   adminAssets: any[];
+  adminUsers: any[];
   fetchAdminAssets: () => Promise<void>;
+  fetchAdminUsers: () => Promise<void>;
   addAsset: (formData: FormData) => Promise<void>;
   editAsset: (id: string, formData: FormData) => Promise<void>;
   setMarketEvent: (assetId: string, magnitude: number, durationSeconds: number) => Promise<void>;
   clearMarketEvents: (assetId: string) => Promise<void>;
   resetEconomy: () => Promise<void>;
+  wipeUser: (userId: string) => Promise<void>;
+  injectStimulus: (userId: string, amount: number) => Promise<void>;
 }
 
 export const useMarketStore = create<MarketState>((set, get) => ({
@@ -56,6 +60,7 @@ export const useMarketStore = create<MarketState>((set, get) => ({
   activeTab: 'TRADING',
   socket: null,
   adminAssets: [],
+  adminUsers: [],
 
   connect: () => {
     if (get().socket) return;
@@ -102,6 +107,12 @@ export const useMarketStore = create<MarketState>((set, get) => ({
     socket.on('user:data', (freshUser: any) => {
       set({ user: freshUser });
       localStorage.setItem('goon_user', JSON.stringify(freshUser));
+    });
+
+    socket.on('user:wipe', () => {
+      toast.error('YOUR ACCOUNT HAS BEEN BURNED BY THE ADMIN.');
+      get().fetchUser();
+      get().fetchTrades();
     });
 
     // Fetch initial data
@@ -297,6 +308,14 @@ export const useMarketStore = create<MarketState>((set, get) => ({
     set({ adminAssets: data });
   },
 
+  fetchAdminUsers: async () => {
+    const host = window.location.hostname;
+    const apiUrl = `http://${host}:28081`;
+    const res = await fetch(`${apiUrl}/admin/users`);
+    const data = await res.json();
+    set({ adminUsers: data });
+  },
+
   addAsset: async (formData) => {
     const host = window.location.hostname;
     const apiUrl = `http://${host}:28081`;
@@ -364,8 +383,33 @@ export const useMarketStore = create<MarketState>((set, get) => ({
       get().fetchAssets();
       get().fetchLeaderboard();
       get().fetchAdminAssets();
+      get().fetchAdminUsers();
     } else {
       toast.error('ECONOMY RESET FAILED');
     }
+  },
+
+  wipeUser: async (userId: string) => {
+    const host = window.location.hostname;
+    const apiUrl = `http://${host}:28081`;
+    await fetch(`${apiUrl}/admin/users/wipe`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId })
+    });
+    toast.success('User Burned');
+    get().fetchAdminUsers();
+  },
+
+  injectStimulus: async (userId: string, amount: number) => {
+    const host = window.location.hostname;
+    const apiUrl = `http://${host}:28081`;
+    await fetch(`${apiUrl}/admin/users/stimulus`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId, amount })
+    });
+    toast.success(`Injected $${amount}`);
+    get().fetchAdminUsers();
   }
 }));

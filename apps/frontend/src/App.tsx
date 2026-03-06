@@ -47,62 +47,56 @@ function App() {
     <div className="flex h-screen w-screen bg-[#08090D] text-[#F0F2F5] overflow-hidden font-sans">
       <Toaster position="bottom-right" />
       
-      {/* NEW ROBUST SIDEBAR */}
-      <aside className="w-[64px] h-full flex-shrink-0 bg-[#0D0E12] border-r border-white/[0.04] flex flex-col items-center py-6 z-[200]">
+      {/* COMPACT ICON-ONLY SIDEBAR */}
+      <aside className="w-[52px] h-full flex-shrink-0 bg-[#0D0E12] border-r border-white/[0.04] flex flex-col items-center py-4 z-[200]">
         
         {/* Brand Logo */}
-        <div className="mb-10">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#3E7BFA] to-[#00FF94] flex items-center justify-center shadow-lg shadow-black/40 cursor-default">
-            <span className="font-black italic text-[#0D0E12] text-xl">G</span>
+        <div className="mb-8">
+          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#3E7BFA] to-[#00FF94] flex items-center justify-center shadow-lg shadow-black/40">
+            <span className="font-black italic text-[#0D0E12] text-xs">G</span>
           </div>
         </div>
 
         {/* Primary Navigation */}
-        <nav className="flex flex-col gap-4 w-full px-2">
-          <SidebarItem 
-            icon={<BarChart3 size={22} />} 
-            label="Terminal" 
+        <nav className="flex flex-col gap-2 w-full items-center">
+          <SidebarIcon 
+            icon={<BarChart3 size={20} />} 
             active={activeTab === 'TRADING'} 
             onClick={() => setActiveTab('TRADING')} 
           />
-          <SidebarItem 
-            icon={<Wallet size={22} />} 
-            label="Vault" 
+          <SidebarIcon 
+            icon={<Wallet size={20} />} 
             active={activeTab === 'PORTFOLIO'} 
             onClick={() => setActiveTab('PORTFOLIO')} 
           />
-          <SidebarItem 
-            icon={<ShoppingBag size={22} />} 
-            label="Shop" 
+          <SidebarIcon 
+            icon={<ShoppingBag size={20} />} 
             active={activeTab === 'SHOP'} 
             onClick={() => setActiveTab('SHOP')} 
           />
           {user.isAdmin && (
-            <SidebarItem 
-              icon={<ShieldAlert size={22} />} 
-              label="Control" 
+            <SidebarIcon 
+              icon={<ShieldAlert size={20} />} 
               active={activeTab === 'ADMIN'} 
               onClick={() => setActiveTab('ADMIN')} 
-              accentColor="#00A3FF"
+              color="#00A3FF"
             />
           )}
         </nav>
 
         {/* Footer Actions */}
-        <div className="mt-auto flex flex-col gap-4 w-full px-2">
-          <div className="py-4 flex justify-center">
-             <span className="text-[8px] font-black text-white/10 uppercase -rotate-90 origin-center whitespace-nowrap tracking-widest">v0.6.5</span>
+        <div className="mt-auto flex flex-col gap-2 w-full items-center pb-2">
+          <div className="py-2 mb-2 flex justify-center">
+             <span className="text-[7px] font-black text-white/5 uppercase -rotate-90 origin-center whitespace-nowrap tracking-widest">v0.6.5</span>
           </div>
-          <SidebarItem 
-            icon={<Settings size={22} />} 
-            label="Settings" 
+          <SidebarIcon 
+            icon={<Settings size={20} />} 
             onClick={() => {}} 
           />
-          <SidebarItem 
-            icon={<LogOut size={22} />} 
-            label="Logout" 
+          <SidebarIcon 
+            icon={<LogOut size={20} />} 
             onClick={() => logout()} 
-            isDestructive
+            hoverColor="hover:text-bear"
           />
         </div>
       </aside>
@@ -137,37 +131,27 @@ function App() {
   );
 }
 
-const SidebarItem = ({ icon, label, active, onClick, accentColor, isDestructive }: any) => {
+const SidebarIcon = ({ icon, active, onClick, color, hoverColor }: any) => {
   return (
-    <div className="relative group w-full flex justify-center">
-      <button
-        onClick={onClick}
-        className={`
-          w-12 h-12 rounded-xl flex items-center justify-center transition-all duration-200 relative
-          ${active 
-            ? 'bg-white/[0.06] text-white shadow-inner' 
-            : `text-white/20 hover:bg-white/[0.03] ${isDestructive ? 'hover:text-bear' : 'hover:text-white/60'}`
-          }
-        `}
-        style={active && accentColor ? { color: accentColor } : {}}
-      >
-        {icon}
-        {active && (
-          <div 
-            className="absolute left-[-10px] top-1/4 w-[3px] h-1/2 bg-white rounded-r-full shadow-[0_0_15px_rgba(255,255,255,0.5)]"
-            style={accentColor ? { backgroundColor: accentColor, boxShadow: `0 0 15px ${accentColor}` } : {}}
-          ></div>
-        )}
-      </button>
-
-      {/* Floating Label / Tooltip */}
-      <div className="absolute left-[64px] top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 pointer-events-none transition-all duration-200 z-[300]">
-        <div className="bg-[#1C1E26] border border-white/[0.08] px-3 py-1.5 rounded-lg shadow-2xl flex items-center gap-2">
-          <span className="text-[10px] font-bold text-white uppercase tracking-widest whitespace-nowrap">{label}</span>
-          <ChevronRight size={10} className="text-white/20" />
-        </div>
-      </div>
-    </div>
+    <button
+      onClick={onClick}
+      className={`
+        w-10 h-10 rounded-lg flex items-center justify-center transition-all duration-200 relative
+        ${active 
+          ? 'bg-white/[0.06] text-white' 
+          : `text-white/20 hover:bg-white/[0.03] ${hoverColor || 'hover:text-white/60'}`
+        }
+      `}
+      style={active && color ? { color: color } : {}}
+    >
+      {icon}
+      {active && (
+        <div 
+          className="absolute left-0 top-1/4 w-[2px] h-1/2 bg-white rounded-r-full shadow-[0_0_15px_rgba(255,255,255,0.5)]"
+          style={color ? { backgroundColor: color, boxShadow: `0 0 15px ${color}` } : {}}
+        ></div>
+      )}
+    </button>
   );
 };
 

@@ -12,6 +12,7 @@ import { CandleStore } from './store/CandleStore.js';
 import { PositionManager, PositionSide } from './manager/PositionManager.js';
 import { LeaderboardManager } from './manager/LeaderboardManager.js';
 import { AuthManager } from './manager/AuthManager.js';
+import { initRedis } from './store/RedisManager.js';
 
 dotenv.config();
 
@@ -64,6 +65,8 @@ const initialAssets = [
 async function initializeServer() {
   console.log('Initializing GoonEconomy Server...');
   
+  await initRedis();
+
   for (const a of initialAssets) {
     await prisma.asset.upsert({
       where: { ticker: a.ticker },
@@ -80,7 +83,8 @@ async function initializeServer() {
   }
 
   await engine.syncFromDb();
-  console.log('Engine synced with database.');
+  await shadowMarketMaker.recoverState();
+  console.log('Engine synced with database and Redis.');
 
   httpServer.listen(port, () => {
     console.log(`GoonEconomy Backend listening on port ${port}`);
@@ -92,7 +96,7 @@ app.use(express.json());
 app.use('/uploads', express.static('public/uploads'));
 
 app.get('/health', (req, res) => {
-  res.json({ status: 'ok', version: '0.6.0', timestamp: Date.now() });
+  res.json({ status: 'ok', version: '0.7.0', timestamp: Date.now() });
 });
 
 // Auth Routes
@@ -110,7 +114,7 @@ app.post('/auth/login', async (req, res) => {
   res.json(result);
 });
 
-// Admin Routes
+// --- ADMIN ROUTES ---
 app.get('/admin/assets', async (req, res) => {
   const assets = await prisma.asset.findMany({ orderBy: { ticker: 'asc' } });
   res.json(assets);
@@ -162,16 +166,12 @@ app.post('/admin/market/clear', async (req, res) => {
 // GLOBAL ECONOMY RESET
 app.post('/admin/economy/reset', async (req, res) => {
   try {
-    // 1. Reset all users to $100
     await prisma.user.updateMany({
       data: { cashBalance: 100.0, statusScore: 0 }
     });
-
-    // 2. Clear all positions and trades
     await prisma.position.deleteMany({});
     await prisma.trade.deleteMany({});
 
-    // 3. Reset asset prices to initial
     for (const a of initialAssets) {
       await prisma.asset.update({
         where: { ticker: a.ticker },
@@ -179,8 +179,59 @@ app.post('/admin/economy/reset', async (req, res) => {
       });
     }
 
-    // 4. Sync engine
     await engine.syncFromDb();
+    res.json({ success: true });
+  } catch (e: any) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// --- ADMIN USER MANAGEMENT ("The Hammer") ---
+app.get('/admin/users', async (req, res) => {
+  try {
+    const users = await prisma.user.findMany({
+      include: {
+        _count: { select: { positions: { where: { isActive: true } } } }
+      },
+      orderBy: { createdAt: 'desc' }
+    });
+    
+    // Calculate live net worths
+    const usersWithStats = await Promise.all(users.map(async user => {
+      const activePos = await posManager.getActivePositions(user.id);
+      const unrealizedPnL = activePos.reduce((acc: number, p: any) => acc + posManager.calculatePnL(p), 0);
+      return {
+        ...user,
+        activePositions: user._count.positions,
+        netWorth: user.cashBalance + unrealizedPnL,
+        unrealizedPnL
+      };
+    }));
+    
+    res.json(usersWithStats);
+  } catch (e: any) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.post('/admin/users/wipe', async (req, res) => {
+  try {
+    const { userId } = req.body;
+    
+    // Close all positions instantly
+    const userPositions = await posManager.getActivePositions(userId);
+    for (const pos of userPositions) {
+      await posManager.closePosition(pos.id);
+    }
+    
+    // Wipe balance
+    await prisma.user.update({
+      where: { id: userId },
+      data: { cashBalance: 0 }
+    });
+    
+    // Force websocket update to the user
+    io.to(`user:${userId}`).emit('user:wipe');
     
     res.json({ success: true });
   } catch (e: any) {
@@ -188,6 +239,22 @@ app.post('/admin/economy/reset', async (req, res) => {
   }
 });
 
+app.post('/admin/users/stimulus', async (req, res) => {
+  try {
+    const { userId, amount } = req.body;
+    
+    await prisma.user.update({
+      where: { id: userId },
+      data: { cashBalance: { increment: amount } }
+    });
+    
+    res.json({ success: true });
+  } catch (e: any) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// --- PUBLIC ROUTES ---
 app.get('/assets', (req, res) => {
   res.json(engine.getAssets());
 });

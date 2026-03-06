@@ -1,5 +1,6 @@
 import { OrderBook, TradeType } from '@gooneconomy/shared';
 import { PrismaClient } from '@prisma/client';
+import { redisClient } from '../store/RedisManager.js';
 
 const prisma = new PrismaClient();
 
@@ -21,18 +22,30 @@ export class MatchingEngine {
 
   public async syncFromDb() {
     const dbAssets = await prisma.asset.findMany();
-    dbAssets.forEach(a => {
+    
+    for (const a of dbAssets) {
+      // Try to recover high-frequency price from Redis first
+      let activePrice = a.currentPrice;
+      try {
+        const cachedPrice = await redisClient.hGet('market:prices', a.id);
+        if (cachedPrice) {
+          activePrice = parseFloat(cachedPrice);
+        }
+      } catch (e) {
+        console.warn(`Could not fetch cached price for ${a.ticker}`);
+      }
+
       this.assets.set(a.id, {
         id: a.id,
         ticker: a.ticker,
         name: a.name,
         type: a.type,
-        currentPrice: a.currentPrice,
+        currentPrice: activePrice,
         totalSupply: a.totalSupply,
         volatility: a.volatility,
         manualBias: a.manualBias
       });
-    });
+    }
   }
 
   public getAssets(): AssetData[] {
@@ -92,9 +105,12 @@ export class MatchingEngine {
 
   public updatePrice(assetId: string, newPrice: number) {
     const asset = this.assets.get(assetId);
-    if (asset) asset.currentPrice = newPrice;
+    if (asset) {
+      asset.currentPrice = newPrice;
+    }
   }
 
+  // Fallback persistent sync for database
   public async persistPrices() {
     for (const asset of this.assets.values()) {
       await prisma.asset.update({
