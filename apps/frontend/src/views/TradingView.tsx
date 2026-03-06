@@ -29,7 +29,7 @@ const TradingView: React.FC = () => {
 
   return (
     <div className="flex-1 flex overflow-hidden relative bg-[#0D0E12] w-full h-full">
-      {/* Left Widget: Watchlist */}
+      {/* Left Widget: Watchlist - FIXED SCROLLING */}
       <div className={`flex flex-shrink-0 transition-all duration-300 ${isAssetPanelOpen ? 'w-[240px]' : 'w-0'} overflow-hidden`}>
         <AssetPanel />
       </div>
@@ -71,8 +71,7 @@ const TradingView: React.FC = () => {
             </div>
           </div>
 
-          <div className="flex items-center gap-4">
-            {/* RESET CHART BUTTON */}
+          <div className="flex items-center gap-4 flex-shrink-0">
             <button 
               onClick={() => chartRef.current?.resetView()}
               className="p-2 rounded-lg bg-white/[0.03] border border-white/[0.05] text-white/20 hover:text-apex hover:border-apex/30 hover:bg-apex/5 transition-all group"
@@ -83,8 +82,7 @@ const TradingView: React.FC = () => {
 
             <div className="w-px h-4 bg-white/[0.06]"></div>
 
-            {/* Timeframe Engine Selector */}
-            <div className="flex items-center gap-1 bg-white/[0.02] p-1 rounded-lg border border-white/[0.04] flex-shrink-0 overflow-x-auto no-scrollbar">
+            <div className="flex items-center gap-1 bg-white/[0.02] p-1 rounded-lg border border-white/[0.04] flex-shrink-0 overflow-x-auto no-scrollbar max-w-[200px] md:max-w-none">
               {timeframes.map(tf => (
                 <button
                   key={tf}
@@ -110,14 +108,14 @@ const TradingView: React.FC = () => {
           )}
         </div>
 
-        {/* Logic Layer: Positions & History */}
-        <div className="h-[220px] flex-shrink-0 flex overflow-hidden">
+        {/* Logic Layer: Positions & History - FIXED HEIGHT & SCROLL */}
+        <div className="h-[280px] flex-shrink-0 flex overflow-hidden border-t border-white/[0.04]">
           <PositionsTerminal />
         </div>
       </main>
 
-      {/* Right Widget: Execution Terminal */}
-      <div className="flex-shrink-0 h-full">
+      {/* Right Widget: Execution Terminal - FIXED SCROLLING */}
+      <div className="flex-shrink-0 h-full overflow-y-auto custom-scrollbar border-l border-white/[0.04]">
         <OrderTerminal />
       </div>
     </div>

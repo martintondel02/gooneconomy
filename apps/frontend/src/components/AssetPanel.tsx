@@ -1,9 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useMarketStore } from '../store/useMarketStore';
 import { Search, TrendingUp, TrendingDown, Image as ImageIcon } from 'lucide-react';
 
 const AssetPanel: React.FC = () => {
   const { assets, marketCaps, prices, activeAsset, setActiveAsset } = useMarketStore();
+  const [searchTerm, setSearchTerm] = useState('');
 
   const formatLargeNumber = (num: number) => {
     if (num >= 1e9) return (num / 1e9).toFixed(1) + 'B';
@@ -12,18 +13,30 @@ const AssetPanel: React.FC = () => {
     return num.toFixed(0);
   };
 
+  const filteredAssets = assets.filter(asset => 
+    asset.ticker.toLowerCase().includes(searchTerm.toLowerCase()) || 
+    asset.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   return (
     <aside className="w-[240px] flex flex-col bg-[#0D0E12] border-r border-white/[0.04] overflow-hidden">
       <div className="h-[52px] px-4 flex items-center justify-between border-b border-white/[0.04] bg-white/[0.01]">
-        <div className="flex items-center gap-2">
-          <Search size={14} className="text-white/20" />
-          <span className="pro-label !text-white/40">Watchlist</span>
+        <div className="relative flex-1 group">
+          <div className="absolute inset-y-0 left-0 flex items-center pointer-events-none">
+            <Search size={14} className="text-white/20 group-focus-within:text-apex transition-colors" />
+          </div>
+          <input 
+            type="text" 
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full bg-transparent py-2 pl-6 pr-2 text-sm text-white placeholder:text-white/20 focus:outline-none transition-all"
+            placeholder="Search Assets..."
+          />
         </div>
-        <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-white/[0.05] text-white/30 font-mono">USDT</span>
       </div>
 
       <div className="flex-1 overflow-y-auto custom-scrollbar py-2">
-        {assets.map((asset) => {
+        {filteredAssets.map((asset) => {
           const currentMCap = marketCaps[asset.ticker] || 0;
           const initialMCap = asset.price * asset.supply;
           const isUp = currentMCap >= initialMCap;
@@ -63,6 +76,11 @@ const AssetPanel: React.FC = () => {
             </div>
           );
         })}
+        {filteredAssets.length === 0 && (
+          <div className="px-4 py-8 text-center opacity-30 text-[10px] uppercase font-bold tracking-widest">
+            No Assets Found
+          </div>
+        )}
       </div>
     </aside>
   );

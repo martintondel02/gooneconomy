@@ -18,7 +18,6 @@ const Chart = forwardRef<ChartHandle, ChartProps>(({ assetId, ticker }, ref) => 
   const [loading, setLoading] = useState(true);
   const { prices, activeTimeframe } = useMarketStore();
   
-  // Track high/low locally for the current candle to avoid "flat" candles during live updates
   const currentCandleRef = useRef<{time: number, open: number, high: number, low: number, close: number} | null>(null);
 
   useImperativeHandle(ref, () => ({
@@ -29,7 +28,6 @@ const Chart = forwardRef<ChartHandle, ChartProps>(({ assetId, ticker }, ref) => 
     }
   }));
 
-  // High-Frequency Price update effect
   useEffect(() => {
     if (!candleSeriesRef.current || !prices[ticker]) return;
 
@@ -44,7 +42,6 @@ const Chart = forwardRef<ChartHandle, ChartProps>(({ assetId, ticker }, ref) => 
     let candle = currentCandleRef.current;
 
     if (!candle || candle.time !== now) {
-      // New candle started
       candle = {
         time: now,
         open: currentPrice,
@@ -53,7 +50,6 @@ const Chart = forwardRef<ChartHandle, ChartProps>(({ assetId, ticker }, ref) => 
         close: currentPrice
       };
     } else {
-      // Update existing candle
       candle.high = Math.max(candle.high, currentPrice);
       candle.low = Math.min(candle.low, currentPrice);
       candle.close = currentPrice;
@@ -82,15 +78,19 @@ const Chart = forwardRef<ChartHandle, ChartProps>(({ assetId, ticker }, ref) => 
         timeVisible: true,
         secondsVisible: true,
         borderColor: 'rgba(255, 255, 255, 0.05)',
+        rightOffset: 5, // Give some space on the right
+        barSpacing: 6,  // FIX: Increase bar spacing to prevent "too zoomed in" feel
       },
       rightPriceScale: {
         borderColor: 'rgba(255, 255, 255, 0.05)',
-        autoScale: true,
+        autoScale: true, // ENSURES AUTOSCALE IS ON
         scaleMargins: {
-          top: 0.15,
-          bottom: 0.15,
+          top: 0.2, // Increased margins to prevent price from hitting ceiling
+          bottom: 0.2,
         },
       },
+      handleScroll: true,
+      handleScale: true,
     });
 
     chartRef.current = chart;
@@ -120,9 +120,10 @@ const Chart = forwardRef<ChartHandle, ChartProps>(({ assetId, ticker }, ref) => 
       .then(data => {
         if (data && data.length > 0) {
           candleSeries.setData(data);
-          // Set the last candle from history as the "current" one so update() merges correctly
           const lastCandle = data[data.length - 1];
           currentCandleRef.current = { ...lastCandle };
+          
+          // FIX DEFAULT ZOOM: Fit content then set a reasonable visible range
           chart.timeScale().fitContent();
         }
         setLoading(false);

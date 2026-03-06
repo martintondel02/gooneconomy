@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { io, Socket } from 'socket.io-client';
+import toast from 'react-hot-toast';
 
 interface MarketState {
   prices: Record<string, number>;
@@ -27,6 +28,8 @@ interface MarketState {
   closePosition: (positionId: string) => Promise<void>;
   fetchUser: () => Promise<void>;
   fetchTrades: () => Promise<void>;
+  fetchLeaderboard: () => Promise<void>;
+  fetchAssets: () => Promise<void>;
   
   // Admin Actions
   adminAssets: any[];
@@ -72,6 +75,19 @@ export const useMarketStore = create<MarketState>((set, get) => ({
     socket.on('market:caps', (marketCaps: Record<string, number>) => set({ marketCaps }));
     socket.on('market:orderbooks', (orderbooks: Record<string, any>) => set({ orderbooks }));
     
+    socket.on('market:liquidations', (liquidations: any[]) => {
+      const { user } = get();
+      if (!user) return;
+      
+      liquidations.forEach(liq => {
+        if (liq.position.userId === user.id) {
+          toast.error(`LIQUIDATION: ${liq.position.assetId} ${liq.position.side} (-$${Math.abs(liq.pnl).toFixed(2)})`);
+          get().fetchUser();
+          get().fetchTrades();
+        }
+      });
+    });
+
     socket.on('user:positions', (positions: any[]) => {
       const { user } = get();
       if (user) {
@@ -79,6 +95,7 @@ export const useMarketStore = create<MarketState>((set, get) => ({
         set({ positions: userPositions });
       }
     });
+    
     socket.on('market:leaderboard', (leaderboard: any[]) => set({ leaderboard }));
     
     socket.on('user:data', (freshUser: any) => {
@@ -86,12 +103,9 @@ export const useMarketStore = create<MarketState>((set, get) => ({
       localStorage.setItem('goon_user', JSON.stringify(freshUser));
     });
 
-    // Fetch initial assets
-    fetch(`${apiUrl}/assets`)
-      .then(res => res.json())
-      .then(assets => {
-        set({ assets, activeAsset: get().activeAsset || assets[0] });
-      });
+    // Fetch initial data
+    get().fetchAssets();
+    get().fetchLeaderboard();
 
     set({ socket });
 
@@ -110,6 +124,22 @@ export const useMarketStore = create<MarketState>((set, get) => ({
       socket.disconnect();
       set({ socket: null });
     }
+  },
+
+  fetchAssets: async () => {
+    const host = window.location.hostname;
+    const apiUrl = `http://${host}:28081`;
+    const res = await fetch(`${apiUrl}/assets`);
+    const assets = await res.json();
+    set({ assets, activeAsset: get().activeAsset || assets[0] });
+  },
+
+  fetchLeaderboard: async () => {
+    const host = window.location.hostname;
+    const apiUrl = `http://${host}:28081`;
+    const res = await fetch(`${apiUrl}/leaderboard`);
+    const data = await res.json();
+    set({ leaderboard: data });
   },
 
   fetchUser: async () => {
@@ -160,7 +190,10 @@ export const useMarketStore = create<MarketState>((set, get) => ({
       body: JSON.stringify({ username, password })
     });
     const result = await res.json();
-    if (result.error) return result;
+    if (result.error) {
+      toast.error(result.error);
+      return result;
+    }
 
     localStorage.setItem('goon_token', result.token);
     localStorage.setItem('goon_user', JSON.stringify(result.user));
@@ -169,7 +202,7 @@ export const useMarketStore = create<MarketState>((set, get) => ({
     const { socket } = get();
     if (socket) socket.emit('subscribe:user', result.user.id);
     get().fetchTrades();
-    
+    toast.success('Session Authenticated');
     return {};
   },
 
@@ -182,7 +215,10 @@ export const useMarketStore = create<MarketState>((set, get) => ({
       body: JSON.stringify({ username, password })
     });
     const result = await res.json();
-    if (result.error) return result;
+    if (result.error) {
+      toast.error(result.error);
+      return result;
+    }
 
     localStorage.setItem('goon_token', result.token);
     localStorage.setItem('goon_user', JSON.stringify(result.user));
@@ -191,7 +227,7 @@ export const useMarketStore = create<MarketState>((set, get) => ({
     const { socket } = get();
     if (socket) socket.emit('subscribe:user', result.user.id);
     get().fetchTrades();
-
+    toast.success('Terminal Provisioned');
     return {};
   },
 
@@ -199,6 +235,7 @@ export const useMarketStore = create<MarketState>((set, get) => ({
     localStorage.removeItem('goon_token');
     localStorage.removeItem('goon_user');
     set({ token: null, user: null, positions: [], trades: [] });
+    toast.success('Session Terminated');
   },
 
   setActiveAsset: (asset: any) => set({ activeAsset: asset }),
@@ -211,7 +248,7 @@ export const useMarketStore = create<MarketState>((set, get) => ({
 
     const host = window.location.hostname;
     const apiUrl = `http://${host}:28081`;
-    await fetch(`${apiUrl}/trade/open`, {
+    const res = await fetch(`${apiUrl}/trade/open`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -222,20 +259,33 @@ export const useMarketStore = create<MarketState>((set, get) => ({
         leverage
       })
     });
-    get().fetchUser();
-    get().fetchTrades();
+    if (res.ok) {
+      toast.success(`ORDER FILLED: ${side} ${activeAsset.ticker} @ ${leverage}x`);
+      get().fetchUser();
+      get().fetchTrades();
+    } else {
+      toast.error('ORDER REJECTED');
+    }
   },
 
   closePosition: async (positionId: string) => {
     const host = window.location.hostname;
     const apiUrl = `http://${host}:28081`;
-    await fetch(`${apiUrl}/trade/close`, {
+    const res = await fetch(`${apiUrl}/trade/close`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ positionId })
     });
-    get().fetchUser();
-    get().fetchTrades();
+    
+    if (res.ok) {
+      const data = await res.json();
+      const pnlPrefix = data.pnl >= 0 ? '+' : '';
+      toast.success(`POSITION CLOSED: ${pnlPrefix}$${data.pnl.toFixed(2)}`);
+      get().fetchUser();
+      get().fetchTrades();
+    } else {
+      toast.error('CLOSE REJECTED');
+    }
   },
 
   fetchAdminAssets: async () => {
@@ -249,21 +299,33 @@ export const useMarketStore = create<MarketState>((set, get) => ({
   addAsset: async (formData) => {
     const host = window.location.hostname;
     const apiUrl = `http://${host}:28081`;
-    await fetch(`${apiUrl}/admin/assets/add`, {
+    const res = await fetch(`${apiUrl}/admin/assets/add`, {
       method: 'POST',
       body: formData
     });
-    get().fetchAdminAssets();
+    if (res.ok) {
+      toast.success('Asset Node Initialized');
+      get().fetchAdminAssets();
+      get().fetchAssets(); // Refresh public assets too
+    } else {
+      toast.error('Initialization Failed');
+    }
   },
 
   editAsset: async (id, formData) => {
     const host = window.location.hostname;
     const apiUrl = `http://${host}:28081`;
-    await fetch(`${apiUrl}/admin/assets/${id}`, {
+    const res = await fetch(`${apiUrl}/admin/assets/${id}`, {
       method: 'PATCH',
       body: formData
     });
-    get().fetchAdminAssets();
+    if (res.ok) {
+      toast.success('Asset Node Modified');
+      get().fetchAdminAssets();
+      get().fetchAssets(); // Refresh public assets too
+    } else {
+      toast.error('Modification Failed');
+    }
   },
 
   setMarketEvent: async (assetId, magnitude, durationSeconds) => {
@@ -274,6 +336,7 @@ export const useMarketStore = create<MarketState>((set, get) => ({
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ assetId, magnitude, durationSeconds })
     });
+    toast.success(`Market Event Dispatched`);
   },
 
   clearMarketEvents: async (assetId) => {
@@ -284,5 +347,6 @@ export const useMarketStore = create<MarketState>((set, get) => ({
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ assetId })
     });
+    toast.success(`Asset Stabilized`);
   }
 }));
