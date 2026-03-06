@@ -48,6 +48,18 @@ interface MarketState {
   injectStimulus: (userId: string, amount: number) => Promise<void>;
 }
 
+const getApiUrl = () => {
+  const protocol = window.location.protocol;
+  const host = window.location.hostname;
+  // If we are on HTTPS, assume the proxy handles the backend on the same port or routes it.
+  // Using relative path is best if proxy routes /api, but since we don't have an /api prefix,
+  // we default to matching protocol and explicit port, or rely on VITE_API_URL if injected.
+  if (import.meta.env.VITE_API_URL) {
+    return import.meta.env.VITE_API_URL;
+  }
+  return `${protocol}//${host}:28081`;
+};
+
 export const useMarketStore = create<MarketState>((set, get) => ({
   prices: {},
   marketCaps: {},
@@ -70,8 +82,7 @@ export const useMarketStore = create<MarketState>((set, get) => ({
   connect: () => {
     if (get().socket) return;
     
-    const host = window.location.hostname;
-    const apiUrl = `http://${host}:28081`;
+    const apiUrl = getApiUrl();
     const socket = io(apiUrl);
     
     socket.on('connect', () => {
@@ -145,16 +156,14 @@ export const useMarketStore = create<MarketState>((set, get) => ({
   },
 
   fetchAssets: async () => {
-    const host = window.location.hostname;
-    const apiUrl = `http://${host}:28081`;
+    const apiUrl = getApiUrl();
     const res = await fetch(`${apiUrl}/assets`);
     const assets = await res.json();
     set({ assets, activeAsset: get().activeAsset || assets[0] });
   },
 
   fetchLeaderboard: async () => {
-    const host = window.location.hostname;
-    const apiUrl = `http://${host}:28081`;
+    const apiUrl = getApiUrl();
     const res = await fetch(`${apiUrl}/leaderboard`);
     const data = await res.json();
     set({ leaderboard: data });
@@ -170,8 +179,7 @@ export const useMarketStore = create<MarketState>((set, get) => ({
         const user = JSON.parse(storedUser);
         set({ user });
         
-        const host = window.location.hostname;
-        const apiUrl = `http://${host}:28081`;
+        const apiUrl = getApiUrl();
         const res = await fetch(`${apiUrl}/user/${user.id}`);
         if (res.ok) {
           const freshUser = await res.json();
@@ -190,8 +198,7 @@ export const useMarketStore = create<MarketState>((set, get) => ({
   fetchTrades: async () => {
     const { user } = get();
     if (!user) return;
-    const host = window.location.hostname;
-    const apiUrl = `http://${host}:28081`;
+    const apiUrl = getApiUrl();
     const res = await fetch(`${apiUrl}/user/trades/${user.id}`);
     if (res.ok) {
       const data = await res.json();
@@ -200,8 +207,7 @@ export const useMarketStore = create<MarketState>((set, get) => ({
   },
 
   login: async (username, password) => {
-    const host = window.location.hostname;
-    const apiUrl = `http://${host}:28081`;
+    const apiUrl = getApiUrl();
     const res = await fetch(`${apiUrl}/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -225,8 +231,7 @@ export const useMarketStore = create<MarketState>((set, get) => ({
   },
 
   register: async (username, password) => {
-    const host = window.location.hostname;
-    const apiUrl = `http://${host}:28081`;
+    const apiUrl = getApiUrl();
     const res = await fetch(`${apiUrl}/auth/register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -265,8 +270,7 @@ export const useMarketStore = create<MarketState>((set, get) => ({
     const { activeAsset, user } = get();
     if (!activeAsset || !user) return;
 
-    const host = window.location.hostname;
-    const apiUrl = `http://${host}:28081`;
+    const apiUrl = getApiUrl();
     const res = await fetch(`${apiUrl}/trade/open`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -288,8 +292,7 @@ export const useMarketStore = create<MarketState>((set, get) => ({
   },
 
   closePosition: async (positionId: string) => {
-    const host = window.location.hostname;
-    const apiUrl = `http://${host}:28081`;
+    const apiUrl = getApiUrl();
     const res = await fetch(`${apiUrl}/trade/close`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -308,24 +311,21 @@ export const useMarketStore = create<MarketState>((set, get) => ({
   },
 
   fetchAdminAssets: async () => {
-    const host = window.location.hostname;
-    const apiUrl = `http://${host}:28081`;
+    const apiUrl = getApiUrl();
     const res = await fetch(`${apiUrl}/admin/assets`);
     const data = await res.json();
     set({ adminAssets: data });
   },
 
   fetchAdminUsers: async () => {
-    const host = window.location.hostname;
-    const apiUrl = `http://${host}:28081`;
+    const apiUrl = getApiUrl();
     const res = await fetch(`${apiUrl}/admin/users`);
     const data = await res.json();
     set({ adminUsers: data });
   },
 
   addAsset: async (formData) => {
-    const host = window.location.hostname;
-    const apiUrl = `http://${host}:28081`;
+    const apiUrl = getApiUrl();
     const res = await fetch(`${apiUrl}/admin/assets/add`, {
       method: 'POST',
       body: formData
@@ -340,8 +340,7 @@ export const useMarketStore = create<MarketState>((set, get) => ({
   },
 
   editAsset: async (id, formData) => {
-    const host = window.location.hostname;
-    const apiUrl = `http://${host}:28081`;
+    const apiUrl = getApiUrl();
     const res = await fetch(`${apiUrl}/admin/assets/${id}`, {
       method: 'PATCH',
       body: formData
@@ -356,8 +355,7 @@ export const useMarketStore = create<MarketState>((set, get) => ({
   },
 
   setMarketEvent: async (assetId, magnitude, durationSeconds) => {
-    const host = window.location.hostname;
-    const apiUrl = `http://${host}:28081`;
+    const apiUrl = getApiUrl();
     await fetch(`${apiUrl}/admin/market/event`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -367,8 +365,7 @@ export const useMarketStore = create<MarketState>((set, get) => ({
   },
 
   clearMarketEvents: async (assetId) => {
-    const host = window.location.hostname;
-    const apiUrl = `http://${host}:28081`;
+    const apiUrl = getApiUrl();
     await fetch(`${apiUrl}/admin/market/clear`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -378,8 +375,7 @@ export const useMarketStore = create<MarketState>((set, get) => ({
   },
 
   resetEconomy: async () => {
-    const host = window.location.hostname;
-    const apiUrl = `http://${host}:28081`;
+    const apiUrl = getApiUrl();
     const res = await fetch(`${apiUrl}/admin/economy/reset`, {
       method: 'POST'
     });
@@ -397,8 +393,7 @@ export const useMarketStore = create<MarketState>((set, get) => ({
   },
 
   wipeUser: async (userId: string) => {
-    const host = window.location.hostname;
-    const apiUrl = `http://${host}:28081`;
+    const apiUrl = getApiUrl();
     await fetch(`${apiUrl}/admin/users/wipe`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -409,8 +404,7 @@ export const useMarketStore = create<MarketState>((set, get) => ({
   },
 
   injectStimulus: async (userId: string, amount: number) => {
-    const host = window.location.hostname;
-    const apiUrl = `http://${host}:28081`;
+    const apiUrl = getApiUrl();
     await fetch(`${apiUrl}/admin/users/stimulus`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
