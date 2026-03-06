@@ -57,7 +57,7 @@ const AssetPanel: React.FC = () => {
             <div 
               key={asset.id}
               onClick={() => setActiveAsset(asset)}
-              className={`mx-2 px-3 py-3 cursor-pointer rounded-xl transition-all mb-1 ${isActive ? 'bg-[#3E7BFA]/10' : 'hover:bg-white/[0.02]'}`}
+              className={`mx-2 px-3 py-3 cursor-pointer rounded-xl transition-all mb-1 border ${isActive ? 'bg-apex/10 border-apex/50 shadow-[0_0_15px_rgba(0,163,255,0.15)] scale-[1.02]' : 'border-transparent hover:bg-white/[0.02] hover:border-white/[0.05]'}`}
             >
               <div className="flex justify-between items-center mb-1">
                 <div className="flex items-center gap-2">
@@ -66,7 +66,7 @@ const AssetPanel: React.FC = () => {
                         <img src={`http://${window.location.hostname}:28081${asset.imageUrl}`} className="w-full h-full object-cover" />
                       ) : <ImageIcon size={10} className="opacity-20" />}
                    </div>
-                   <span className={`text-[12px] font-bold tracking-tight ${isActive ? 'text-[#3E7BFA]' : 'text-white/80'}`}>
+                   <span className={`text-[12px] font-bold tracking-tight ${isActive ? 'text-apex' : 'text-white/80'}`}>
                      {asset.ticker}
                    </span>
                 </div>

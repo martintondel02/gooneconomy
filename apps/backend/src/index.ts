@@ -5,6 +5,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import multer from 'multer';
 import fs from 'fs';
+import path from 'path';
 import { PrismaClient } from '@prisma/client';
 import { MatchingEngine } from './engine/MatchingEngine.js';
 import { ShadowMarketMaker } from './engine/ShadowMarketMaker.js';
@@ -28,8 +29,8 @@ const io = new Server(httpServer, {
 
 const port = process.env.PORT || 28081;
 
-// Setup File Uploads
-const uploadDir = './public/uploads';
+// Setup File Uploads using absolute paths for CommonJS
+const uploadDir = path.resolve(__dirname, '..', 'public', 'uploads');
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
 }
@@ -93,7 +94,8 @@ async function initializeServer() {
 
 app.use(cors());
 app.use(express.json());
-app.use('/uploads', express.static('public/uploads'));
+// Serve uploaded files statically
+app.use('/uploads', express.static(uploadDir));
 
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', version: '0.7.0', timestamp: Date.now() });

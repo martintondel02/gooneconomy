@@ -1,6 +1,6 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import { useMarketStore } from '../store/useMarketStore';
-import { ChevronLeft, ChevronRight, BarChart3, Activity, PieChart, Maximize2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Activity, Maximize2, DollarSign, PieChart } from 'lucide-react';
 import Chart, { ChartHandle } from '../components/Chart';
 import AssetPanel from '../components/AssetPanel';
 import OrderTerminal from '../components/OrderTerminal';
@@ -13,6 +13,8 @@ const TradingView: React.FC = () => {
     activeAsset, 
     activeTimeframe,
     setActiveTimeframe,
+    chartMode,
+    setChartMode
   } = useMarketStore();
 
   const [isAssetPanelOpen, setIsAssetPanelOpen] = useState(true);
@@ -51,8 +53,12 @@ const TradingView: React.FC = () => {
         <div className="h-[52px] flex-shrink-0 border-b border-white/[0.04] flex items-center px-6 justify-between bg-white/[0.01]">
           <div className="flex items-center gap-6 overflow-hidden mr-4">
             <div className="flex items-center gap-3 flex-shrink-0">
-              <div className="w-7 h-7 rounded-lg bg-white/[0.03] flex items-center justify-center border border-white/[0.05]">
-                <Activity size={14} className="text-apex" />
+              <div className="w-7 h-7 rounded-lg bg-white/[0.03] flex items-center justify-center border border-white/[0.05] overflow-hidden">
+                {activeAsset?.imageUrl ? (
+                   <img src={`http://${window.location.hostname}:28081${activeAsset.imageUrl}`} className="w-full h-full object-cover" />
+                ) : (
+                   <Activity size={14} className="text-apex" />
+                )}
               </div>
               <h2 className="text-[14px] font-bold text-white uppercase truncate max-w-[100px]">{activeAsset?.ticker}</h2>
             </div>
@@ -70,21 +76,40 @@ const TradingView: React.FC = () => {
             </div>
           </div>
 
-          {/* Timeframe Selector - FIXED SPACING */}
           <div className="flex items-center gap-4 flex-shrink-0 overflow-hidden">
+            {/* Chart Mode Toggle */}
+            <div className="flex items-center bg-white/[0.02] p-1 rounded-lg border border-white/[0.04] hidden md:flex">
+               <button 
+                  onClick={() => setChartMode('PRICE')}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[9px] font-bold transition-all ${chartMode === 'PRICE' ? 'bg-apex text-[#08090D] shadow-lg' : 'text-white/30 hover:text-white/60'}`}
+               >
+                 <DollarSign size={10} /> PRICE
+               </button>
+               <button 
+                  onClick={() => setChartMode('MARKET_CAP')}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[9px] font-bold transition-all ${chartMode === 'MARKET_CAP' ? 'bg-apex text-[#08090D] shadow-lg' : 'text-white/30 hover:text-white/60'}`}
+               >
+                 <PieChart size={10} /> M.CAP
+               </button>
+            </div>
+
+            <div className="w-px h-4 bg-white/[0.06] flex-shrink-0"></div>
+            
             <button 
               onClick={() => chartRef.current?.resetView()}
               className="p-1.5 rounded-lg bg-white/[0.03] border border-white/[0.05] text-white/20 hover:text-apex transition-all flex-shrink-0"
             >
               <Maximize2 size={12} />
             </button>
+            
             <div className="w-px h-4 bg-white/[0.06] flex-shrink-0"></div>
+            
             <div className="flex items-center gap-2 bg-white/[0.02] p-1 rounded-lg border border-white/[0.04] overflow-x-auto custom-scrollbar no-scrollbar flex-shrink-0">
               {timeframes.slice(2).map(tf => (
                 <button
                   key={tf}
                   onClick={() => setActiveTimeframe(tf)}
-                  className={`px-3 py-1.5 rounded-md text-[10px] font-bold transition-all flex-shrink-0 min-w-[32px] ${activeTimeframe === tf ? 'bg-apex text-[#08090D] shadow-lg shadow-apex/20' : 'text-white/30 hover:text-white/60 hover:bg-white/5'}`}
+                  className={`px-3 py-1.5 rounded-md text-[10px] font-bold transition-all flex-shrink-0 min-w-[32px] ${activeTimeframe === tf ? 'bg-white/10 text-white shadow-inner border border-white/10' : 'text-white/30 hover:text-white/60 hover:bg-white/5 border border-transparent'}`}
                 >
                   {tf.toUpperCase()}
                 </button>
@@ -98,9 +123,10 @@ const TradingView: React.FC = () => {
           {activeAsset ? (
             <Chart 
               ref={chartRef}
-              key={`${activeAsset.id}-${activeTimeframe}`} 
+              key={`${activeAsset.id}-${activeTimeframe}-${chartMode}`} 
               assetId={activeAsset.id} 
               ticker={activeAsset.ticker} 
+              mode={chartMode}
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center opacity-20">

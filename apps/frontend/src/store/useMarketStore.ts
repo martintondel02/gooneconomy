@@ -15,6 +15,7 @@ interface MarketState {
   activeAsset: any | null;
   activeTimeframe: string;
   activeTab: 'TRADING' | 'PORTFOLIO' | 'SHOP' | 'ADMIN';
+  chartMode: 'PRICE' | 'MARKET_CAP';
   socket: Socket | null;
   connect: () => void;
   disconnect: () => void;
@@ -24,6 +25,7 @@ interface MarketState {
   setActiveAsset: (asset: any) => void;
   setActiveTimeframe: (tf: string) => void;
   setActiveTab: (tab: 'TRADING' | 'PORTFOLIO' | 'SHOP' | 'ADMIN') => void;
+  setChartMode: (mode: 'PRICE' | 'MARKET_CAP') => void;
   openPosition: (side: 'LONG' | 'SHORT', margin: number, leverage: number) => Promise<void>;
   closePosition: (positionId: string) => Promise<void>;
   fetchUser: () => Promise<void>;
@@ -58,6 +60,7 @@ export const useMarketStore = create<MarketState>((set, get) => ({
   activeAsset: null,
   activeTimeframe: '1m',
   activeTab: 'TRADING',
+  chartMode: 'MARKET_CAP',
   socket: null,
   adminAssets: [],
   adminUsers: [],
@@ -253,6 +256,7 @@ export const useMarketStore = create<MarketState>((set, get) => ({
   setActiveAsset: (asset: any) => set({ activeAsset: asset }),
   setActiveTimeframe: (tf: string) => set({ activeTimeframe: tf }),
   setActiveTab: (tab) => set({ activeTab: tab }),
+  setChartMode: (mode) => set({ chartMode: mode }),
 
   openPosition: async (side, margin, leverage) => {
     const { activeAsset, user } = get();
