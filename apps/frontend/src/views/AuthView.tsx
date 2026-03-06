@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useMarketStore } from '../store/useMarketStore';
-import { Lock, User, ArrowRight, ShieldCheck } from 'lucide-react';
+import { Lock, User, ArrowRight, Activity } from 'lucide-react';
 
 const AuthView: React.FC = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -28,52 +28,47 @@ const AuthView: React.FC = () => {
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-[#08090D] relative overflow-hidden font-sans">
-      {/* Dynamic Background Elements */}
-      <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-[#00A3FF]/5 blur-[120px] rounded-full animate-pulse"></div>
-      <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-[#00FF94]/5 blur-[120px] rounded-full animate-pulse" style={{ animationDelay: '2s' }}></div>
-      
-      <div className="w-full max-w-[380px] p-10 rounded-2xl border border-white/[0.06] bg-white/[0.01] backdrop-blur-[32px] relative z-10 shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
+      {/* Institutional Auth Card */}
+      <div className="w-full max-w-[360px] p-10 rounded-xl border border-white/[0.05] bg-[#11131A] relative z-10 shadow-2xl">
         <div className="flex flex-col items-center mb-10">
-          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-apex to-bull flex items-center justify-center mb-6 shadow-xl">
-            <ShieldCheck size={28} className="text-[#08090D]" />
+          <div className="w-12 h-12 rounded-lg bg-white/[0.03] border border-white/[0.05] flex items-center justify-center mb-6">
+            <Activity size={24} className="text-apex" />
           </div>
-          <h1 className="text-2xl font-bold tracking-tight text-white mb-2">
-            Goon<span className="text-bull font-medium">Economy</span>
+          <h1 className="text-xl font-bold tracking-tight text-white mb-2">
+            GOON<span className="text-white/50 font-medium">ECONOMY</span>
           </h1>
-          <p className="text-[11px] font-medium text-white/30 uppercase tracking-[0.2em]">Institutional Grade Terminal</p>
+          <p className="text-[10px] font-bold text-white/30 uppercase tracking-[0.1em]">Terminal Authorization</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-5">
           <div className="space-y-2">
-            <label className="pro-label px-1">Access Identity</label>
+            <label className="pro-label px-1">Network ID</label>
             <div className="relative group">
-              {/* FIXED ICON POSITIONING */}
-              <div className="absolute left-4 top-1/2 -translate-y-1/2 flex items-center pointer-events-none">
-                <User size={16} className="text-white/20 group-focus-within:text-bull transition-colors" />
+              <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
+                <User size={14} className="text-white/20 group-focus-within:text-apex transition-colors" />
               </div>
               <input 
                 type="text" 
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                className="w-full bg-white/[0.03] border border-white/[0.05] rounded-lg py-3.5 pl-11 pr-4 text-sm text-white placeholder:text-white/10 focus:border-bull/40 focus:bg-bull/5 transition-all outline-none"
-                placeholder="Unique Identifier"
+                className="w-full bg-[#08090D] border border-white/[0.05] rounded-lg py-3.5 pl-11 pr-4 text-sm text-white placeholder:text-white/10 focus:border-apex/30 focus:bg-white/[0.02] transition-all outline-none"
+                placeholder="Identifier"
                 required
               />
             </div>
           </div>
 
           <div className="space-y-2">
-            <label className="pro-label px-1">Security Key</label>
+            <label className="pro-label px-1">Access Key</label>
             <div className="relative group">
-              {/* FIXED ICON POSITIONING */}
-              <div className="absolute left-4 top-1/2 -translate-y-1/2 flex items-center pointer-events-none">
-                <Lock size={16} className="text-white/20 group-focus-within:text-bull transition-colors" />
+              <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
+                <Lock size={14} className="text-white/20 group-focus-within:text-apex transition-colors" />
               </div>
               <input 
                 type="password" 
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full bg-white/[0.03] border border-white/[0.05] rounded-lg py-3.5 pl-11 pr-4 text-sm text-white placeholder:text-white/10 focus:border-bull/40 focus:bg-bull/5 transition-all outline-none"
+                className="w-full bg-[#08090D] border border-white/[0.05] rounded-lg py-3.5 pl-11 pr-4 text-sm text-white placeholder:text-white/10 focus:border-apex/30 focus:bg-white/[0.02] transition-all outline-none"
                 placeholder="Passphrase"
                 required
               />
@@ -81,33 +76,28 @@ const AuthView: React.FC = () => {
           </div>
 
           {error && (
-            <div className="p-3 bg-bear/5 border border-bear/10 text-bear text-[10px] font-semibold uppercase tracking-wider rounded-lg text-center leading-relaxed">
-              Authentication Error: {error}
+            <div className="p-3 bg-bear/5 border border-bear/10 text-bear text-[10px] font-bold uppercase tracking-widest rounded-lg text-center">
+              Error: {error}
             </div>
           )}
 
           <button 
             type="submit"
             disabled={loading}
-            className={`w-full bg-bull hover:bg-bull/90 disabled:opacity-50 text-[#08090D] font-bold py-4 rounded-lg flex items-center justify-center gap-2 transition-all uppercase tracking-widest text-[12px] shadow-lg shadow-bull/10 active:scale-[0.98]`}
+            className="w-full mt-4 bg-apex hover:bg-apex/90 disabled:opacity-50 text-[#08090D] font-bold py-4 rounded-lg flex items-center justify-center gap-2 transition-all uppercase tracking-widest text-[11px] shadow-lg shadow-apex/10"
           >
-            {loading ? 'Initializing...' : (isLogin ? 'Connect Terminal' : 'Register Access')}
-            <ArrowRight size={18} className="group-hover:translate-x-0.5 transition-transform" />
+            {loading ? 'Authenticating...' : (isLogin ? 'Connect Node' : 'Register Node')}
+            <ArrowRight size={16} />
           </button>
         </form>
 
-        <div className="mt-10 flex flex-col items-center gap-4">
+        <div className="mt-8 pt-6 border-t border-white/[0.05] flex flex-col items-center gap-4">
           <button 
             onClick={() => setIsLogin(!isLogin)}
             className="pro-label hover:text-white transition-colors cursor-pointer"
           >
-            {isLogin ? "Request New Access Node" : "Authenticate Session"}
+            {isLogin ? "Provision New Node Instead" : "Authenticate Existing Node"}
           </button>
-          
-          <div className="flex items-center gap-2 mt-2 opacity-20">
-            <div className="w-1 h-1 rounded-full bg-white animate-pulse"></div>
-            <span className="text-[8px] font-bold uppercase tracking-[0.4em]">Node Status: Active</span>
-          </div>
         </div>
       </div>
     </div>

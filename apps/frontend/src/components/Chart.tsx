@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState, useImperativeHandle, forwardRef } from 'react';
-import { createChart, ColorType, ISeriesApi } from 'lightweight-charts';
+import { createChart, ColorType, ISeriesApi, SeriesMarkerPosition, SeriesMarkerShape } from 'lightweight-charts';
 import { useMarketStore } from '../store/useMarketStore';
 
 interface ChartProps {
@@ -17,7 +17,9 @@ const Chart = forwardRef<ChartHandle, ChartProps>(({ assetId, ticker, mode = 'MA
   const chartRef = useRef<any>(null);
   const candleSeriesRef = useRef<ISeriesApi<'Candlestick'>>(null);
   const [loading, setLoading] = useState(true);
-  const { prices, marketCaps, activeTimeframe, assets } = useMarketStore();
+  
+  // Notice we pull 'trades' which holds the user's specific trade history
+  const { prices, marketCaps, activeTimeframe, assets, trades } = useMarketStore();
   
   const currentAsset = assets.find(a => a.id === assetId);
   const currentCandleRef = useRef<{time: number, open: number, high: number, low: number, close: number} | null>(null);
@@ -29,6 +31,28 @@ const Chart = forwardRef<ChartHandle, ChartProps>(({ assetId, ticker, mode = 'MA
       }
     }
   }));
+
+  // Render Trade Markers
+  useEffect(() => {
+    if (!candleSeriesRef.current) return;
+    
+    // Filter trades for the current asset and sort by time ascending
+    const assetTrades = trades.filter(t => t.assetId === assetId).sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+    
+    const markers = assetTrades.map(trade => {
+      const isBuy = trade.type === 'BUY';
+      return {
+        time: Math.floor(new Date(trade.timestamp).getTime() / 1000) as any,
+        position: isBuy ? 'belowBar' as SeriesMarkerPosition : 'aboveBar' as SeriesMarkerPosition,
+        color: isBuy ? '#00FF94' : '#FF3E60',
+        shape: isBuy ? 'arrowUp' as SeriesMarkerShape : 'arrowDown' as SeriesMarkerShape,
+        text: `${trade.type} @ $${trade.priceAtExecution.toFixed(2)}`,
+        size: 1.5
+      };
+    });
+
+    candleSeriesRef.current.setMarkers(markers);
+  }, [trades, assetId, mode]); // Re-render if trades or mode changes
 
   // High-Frequency Price update effect
   useEffect(() => {
@@ -133,7 +157,6 @@ const Chart = forwardRef<ChartHandle, ChartProps>(({ assetId, ticker, mode = 'MA
       .then(res => res.json())
       .then(data => {
         if (data && data.length > 0) {
-          // Transform historical data based on mode
           const transformedData = data.map((c: any) => {
             if (mode === 'MARKET_CAP' && currentAsset) {
               const multiplier = currentAsset.totalSupply || 1;
