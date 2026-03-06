@@ -92,7 +92,7 @@ app.use(express.json());
 app.use('/uploads', express.static('public/uploads'));
 
 app.get('/health', (req, res) => {
-  res.json({ status: 'ok', version: '0.5.0', timestamp: Date.now() });
+  res.json({ status: 'ok', version: '0.6.0', timestamp: Date.now() });
 });
 
 // Auth Routes
@@ -157,6 +157,35 @@ app.post('/admin/market/clear', async (req, res) => {
   const { assetId } = req.body;
   shadowMarketMaker.clearEvents(assetId);
   res.json({ success: true });
+});
+
+// GLOBAL ECONOMY RESET
+app.post('/admin/economy/reset', async (req, res) => {
+  try {
+    // 1. Reset all users to $100
+    await prisma.user.updateMany({
+      data: { cashBalance: 100.0, statusScore: 0 }
+    });
+
+    // 2. Clear all positions and trades
+    await prisma.position.deleteMany({});
+    await prisma.trade.deleteMany({});
+
+    // 3. Reset asset prices to initial
+    for (const a of initialAssets) {
+      await prisma.asset.update({
+        where: { ticker: a.ticker },
+        data: { currentPrice: a.price, manualBias: 0.0 }
+      });
+    }
+
+    // 4. Sync engine
+    await engine.syncFromDb();
+    
+    res.json({ success: true });
+  } catch (e: any) {
+    res.status(500).json({ error: e.message });
+  }
 });
 
 app.get('/assets', (req, res) => {

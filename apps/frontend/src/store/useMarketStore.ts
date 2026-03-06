@@ -38,6 +38,7 @@ interface MarketState {
   editAsset: (id: string, formData: FormData) => Promise<void>;
   setMarketEvent: (assetId: string, magnitude: number, durationSeconds: number) => Promise<void>;
   clearMarketEvents: (assetId: string) => Promise<void>;
+  resetEconomy: () => Promise<void>;
 }
 
 export const useMarketStore = create<MarketState>((set, get) => ({
@@ -306,7 +307,7 @@ export const useMarketStore = create<MarketState>((set, get) => ({
     if (res.ok) {
       toast.success('Asset Node Initialized');
       get().fetchAdminAssets();
-      get().fetchAssets(); // Refresh public assets too
+      get().fetchAssets();
     } else {
       toast.error('Initialization Failed');
     }
@@ -322,7 +323,7 @@ export const useMarketStore = create<MarketState>((set, get) => ({
     if (res.ok) {
       toast.success('Asset Node Modified');
       get().fetchAdminAssets();
-      get().fetchAssets(); // Refresh public assets too
+      get().fetchAssets();
     } else {
       toast.error('Modification Failed');
     }
@@ -348,5 +349,23 @@ export const useMarketStore = create<MarketState>((set, get) => ({
       body: JSON.stringify({ assetId })
     });
     toast.success(`Asset Stabilized`);
+  },
+
+  resetEconomy: async () => {
+    const host = window.location.hostname;
+    const apiUrl = `http://${host}:28081`;
+    const res = await fetch(`${apiUrl}/admin/economy/reset`, {
+      method: 'POST'
+    });
+    if (res.ok) {
+      toast.success('GLOBAL ECONOMY RESET SUCCESSFUL');
+      get().fetchUser();
+      get().fetchTrades();
+      get().fetchAssets();
+      get().fetchLeaderboard();
+      get().fetchAdminAssets();
+    } else {
+      toast.error('ECONOMY RESET FAILED');
+    }
   }
 }));

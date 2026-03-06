@@ -1,9 +1,9 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useMarketStore } from '../store/useMarketStore';
-import { ShieldAlert, Plus, Edit3, TrendingUp, TrendingDown, RefreshCcw, Activity, Info, Upload, Image as ImageIcon, X } from 'lucide-react';
+import { ShieldAlert, Plus, Edit3, TrendingUp, TrendingDown, RefreshCcw, Activity, Info, Upload, Image as ImageIcon, X, Trash2 } from 'lucide-react';
 
 const AdminView: React.FC = () => {
-  const { adminAssets, fetchAdminAssets, addAsset, editAsset, setMarketEvent, clearMarketEvents } = useMarketStore();
+  const { adminAssets, fetchAdminAssets, addAsset, editAsset, setMarketEvent, clearMarketEvents, resetEconomy } = useMarketStore();
   const [showModal, setShowModal] = useState(false);
   const [editingAsset, setEditingAsset] = useState<any>(null);
   
@@ -71,10 +71,16 @@ const AdminView: React.FC = () => {
     setShowModal(true);
   };
 
+  const handleResetEconomy = () => {
+    if (window.confirm("CRITICAL: This will reset all user balances to $100 and clear ALL trade history. Continue?")) {
+      resetEconomy();
+    }
+  };
+
   return (
     <div className="flex-1 flex flex-col min-h-0 bg-[#08090D] font-sans relative overflow-hidden">
       <div className="flex-1 overflow-y-auto custom-scrollbar p-10">
-        <div className="max-w-7xl mx-auto space-y-10">
+        <div className="max-w-7xl mx-auto space-y-10 pb-20">
           
           <header className="flex justify-between items-center bg-apex/5 border border-apex/20 p-8 rounded-2xl relative overflow-hidden">
             <div className="absolute top-0 right-0 p-4 opacity-10">
@@ -87,13 +93,23 @@ const AdminView: React.FC = () => {
               </h1>
               <p className="pro-label !text-apex mt-2">Level 4 Authorization Verified // Terminal Node: root</p>
             </div>
-            <button 
-              onClick={() => { resetForm(); setShowModal(true); }}
-              className="relative z-10 px-6 py-3 bg-apex text-[#08090D] font-black rounded-xl flex items-center gap-2 hover:brightness-110 transition-all active:scale-95 shadow-2xl shadow-apex/20"
-            >
-              <Plus size={20} />
-              Provision New Asset
-            </button>
+            
+            <div className="flex gap-4 relative z-10">
+              <button 
+                onClick={handleResetEconomy}
+                className="px-6 py-3 bg-bear/10 border border-bear/20 text-bear font-black rounded-xl flex items-center gap-2 hover:bg-bear hover:text-white transition-all active:scale-95 shadow-xl shadow-bear/10"
+              >
+                <Trash2 size={20} />
+                Hard Reset Economy
+              </button>
+              <button 
+                onClick={() => { resetForm(); setShowModal(true); }}
+                className="px-6 py-3 bg-apex text-[#08090D] font-black rounded-xl flex items-center gap-2 hover:brightness-110 transition-all active:scale-95 shadow-2xl shadow-apex/20"
+              >
+                <Plus size={20} />
+                Provision Asset
+              </button>
+            </div>
           </header>
 
           <section className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -172,7 +188,7 @@ const AdminView: React.FC = () => {
             <Info className="text-apex shrink-0" size={20} />
             <div className="space-y-1">
               <h4 className="text-sm font-bold text-white/80 uppercase tracking-tight">Protocol Warning</h4>
-              <p className="text-xs text-white/30 leading-relaxed font-medium">Interventions are cumulative. Setting a pump while a crash is active will neutralize or skew the trajectory.</p>
+              <p className="text-xs text-white/30 leading-relaxed font-medium">Interventions are cumulative. Setting a pump while a crash is active will neutralize or skew the trajectory. A Hard Reset will purge all temporary network state.</p>
             </div>
           </div>
         </div>

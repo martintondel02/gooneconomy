@@ -29,7 +29,7 @@ const TradingView: React.FC = () => {
   return (
     <div className="flex-1 flex h-full w-full bg-[#0D0E12] overflow-hidden min-h-0">
       
-      {/* COLUMN 1: Watchlist - FIXED WIDTH */}
+      {/* COLUMN 1: Watchlist */}
       <div 
         className={`h-full border-r border-white/[0.04] transition-all duration-300 relative flex-shrink-0 overflow-hidden ${isAssetPanelOpen ? 'w-[240px]' : 'w-0'}`}
       >
@@ -44,7 +44,7 @@ const TradingView: React.FC = () => {
         </button>
       </div>
 
-      {/* COLUMN 2: Main Content (Chart + Positions) - FLEX GROW */}
+      {/* COLUMN 2: Main Content */}
       <main className="flex-1 flex flex-col min-w-0 h-full overflow-hidden border-r border-white/[0.04] bg-[#0D0E12]">
         
         {/* Asset Dashboard Header */}
@@ -70,21 +70,21 @@ const TradingView: React.FC = () => {
             </div>
           </div>
 
-          {/* Timeframe Engine Selector */}
-          <div className="flex items-center gap-2 flex-shrink-0">
+          {/* Timeframe Selector - FIXED SPACING */}
+          <div className="flex items-center gap-4 flex-shrink-0 overflow-hidden">
             <button 
               onClick={() => chartRef.current?.resetView()}
-              className="p-1.5 rounded-lg bg-white/[0.03] border border-white/[0.05] text-white/20 hover:text-apex transition-all"
+              className="p-1.5 rounded-lg bg-white/[0.03] border border-white/[0.05] text-white/20 hover:text-apex transition-all flex-shrink-0"
             >
               <Maximize2 size={12} />
             </button>
-            <div className="w-px h-4 bg-white/[0.06]"></div>
-            <div className="flex items-center gap-1 bg-white/[0.02] p-1 rounded-lg border border-white/[0.04] overflow-x-auto no-scrollbar max-w-[150px] md:max-w-none">
+            <div className="w-px h-4 bg-white/[0.06] flex-shrink-0"></div>
+            <div className="flex items-center gap-2 bg-white/[0.02] p-1 rounded-lg border border-white/[0.04] overflow-x-auto custom-scrollbar no-scrollbar flex-shrink-0">
               {timeframes.slice(2).map(tf => (
                 <button
                   key={tf}
                   onClick={() => setActiveTimeframe(tf)}
-                  className={`px-2.5 py-1 rounded-md text-[9px] font-bold transition-all flex-shrink-0 ${activeTimeframe === tf ? 'bg-apex text-[#08090D]' : 'text-white/30 hover:text-white/60'}`}
+                  className={`px-3 py-1.5 rounded-md text-[10px] font-bold transition-all flex-shrink-0 min-w-[32px] ${activeTimeframe === tf ? 'bg-apex text-[#08090D] shadow-lg shadow-apex/20' : 'text-white/30 hover:text-white/60 hover:bg-white/5'}`}
                 >
                   {tf.toUpperCase()}
                 </button>
@@ -93,7 +93,7 @@ const TradingView: React.FC = () => {
           </div>
         </div>
 
-        {/* Core Visualization Area - FLEX 1 TO FILL SPACE */}
+        {/* Core Visualization Area */}
         <div className="flex-1 w-full relative overflow-hidden bg-black/10">
           {activeAsset ? (
             <Chart 
@@ -115,7 +115,7 @@ const TradingView: React.FC = () => {
         </div>
       </main>
 
-      {/* COLUMN 3: Execution Terminal - FIXED WIDTH */}
+      {/* COLUMN 3: Execution Terminal */}
       <div className="w-[320px] h-full flex-shrink-0 flex flex-col overflow-hidden bg-[#08090D]">
         <OrderTerminal />
       </div>
